@@ -551,3 +551,9 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
   .anh-lon { aspect-ratio: 16 / 9; }
   .hop-toi { max-height: 92vh; }
 }
+
+/* iPhone: không dùng backdrop-filter cho phần tử trong danh sách cuộn (giật) — dùng kính giả */
+.ds-nguoi li, .ds-gio li, .chip, .ds-toi li, .the-xh, .the-so > div {
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+.ds-gio li, .ds-nguoi li:not(.tt-song):not(.tt-mat) { background: var(--kinh-dam); }
