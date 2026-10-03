@@ -426,6 +426,14 @@
   }
   function demHau(p) { var n = 0; conHien(p).forEach(function (c) { n += 1 + demHau(c); }); return n; }
 
+  function khung() { return { width: svg.clientWidth, height: svg.clientHeight }; }
+  /* Nút "Xem ngang": xoay phả đồ 90° chiếm cả màn hình (dùng được cả khi iPhone khoá xoay) */
+  var XOAY = false;
+  function datXoay(b) {
+    XOAY = b; document.documentElement.classList.toggle('xoay-ngang', b);
+    requestAnimationFrame(function () { if (TOI && DB && DB.byId[TOI]) canhGiua(TOI); else vuaKhung(true); });
+    if (b) bao('Nghiêng điện thoại sang ngang để xem. Bấm ⟲ để trở lại.');
+  }
   function apV() { G.setAttribute('transform', 'translate(' + V.x + ',' + V.y + ') scale(' + V.k + ')'); }
   function kep(k) { return Math.max(0.15, Math.min(2.5, k)); }
   function bayToi(nx, ny, nk, ms) {
@@ -438,7 +446,7 @@
     })(t0);
   }
   function vuaKhung(muot) {
-    var b = G._bien, r = svg.getBoundingClientRect();
+    var b = G._bien, r = khung();
     if (!b || !r.width) return;
     var w = b.x1 - b.x0, h = b.y1 - b.y0;
     var k = kep(Math.min(r.width / w, (r.height - 40) / h, 1));
@@ -473,7 +481,7 @@
     }
     if (mo) { ghi('thugon', Array.from(thuGon)); veCay(true); }
     if (p._x == null) { bao('Người này không hiện trên phả đồ ở cách xem hiện tại'); return; }
-    var r = svg.getBoundingClientRect(), k = Math.max(V.k, 0.85);
+    var r = khung(), k = Math.max(V.k, 0.85);
     bayToi(r.width / 2 - (p._x + CW / 2) * k, r.height / 2.6 - (p._y + CH / 2) * k, k);
     if (nhay) {
       var g = G.querySelector('[data-id="' + id + '"]');
@@ -501,7 +509,11 @@
   (function () {
     var pts = new Map(), keo = null, veo = null, daDi = false, trungVao = null;
     var khung = $('#khungCay');
-    function diem(e) { var r = svg.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    function diem(e) { // toạ độ trong khung phả đồ (kể cả khi đang xoay ngang 90°)
+      var r = svg.getBoundingClientRect();
+      if (XOAY) return { x: e.clientY - r.top, y: r.right - e.clientX };
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    }
     svg.addEventListener('pointerdown', function (e) {
       svg.setPointerCapture(e.pointerId);
       pts.set(e.pointerId, diem(e));
@@ -543,7 +555,7 @@
           if (gon) {
             if (thuGon.has(gon)) thuGon.delete(gon); else thuGon.add(gon);
             ghi('thugon', Array.from(thuGon)); veCay(true); danhDauChon(chonId);
-          } else moChiTiet(trungVao.getAttribute('data-id'));
+          } else { var idMo = trungVao.getAttribute('data-id'); if (XOAY) datXoay(false); moChiTiet(idMo); }
         }
         keo = veo = null; trungVao = null;
       }
@@ -557,8 +569,9 @@
       if (e.ctrlKey || e.metaKey || laChuot) zoomTai(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0018)), p.x, p.y);
       else { V.x -= e.deltaX; V.y -= e.deltaY; apV(); }
     }, { passive: false });
-    $('#zIn').onclick = function () { var r = svg.getBoundingClientRect(); zoomTai(1.3, r.width / 2, r.height / 2); };
-    $('#zOut').onclick = function () { var r = svg.getBoundingClientRect(); zoomTai(1 / 1.3, r.width / 2, r.height / 2); };
+    $('#zIn').onclick = function () { var r = khung(); zoomTai(1.3, r.width / 2, r.height / 2); };
+    $('#zOut').onclick = function () { var r = khung(); zoomTai(1 / 1.3, r.width / 2, r.height / 2); };
+    $('#zXoay').onclick = function () { datXoay(!XOAY); };
     $('#zFit').onclick = function () { vuaKhung(true); };
     $('#zToi').onclick = function () {
       if (TOI && DB.byId[TOI]) canhGiua(TOI, true); else moHoiToi();

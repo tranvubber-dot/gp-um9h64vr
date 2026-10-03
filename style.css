@@ -564,3 +564,22 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
 }
 .ios .ngan-keo, .ios .hop-toi, .ios .bang-gio, .ios .thong-bao { background: var(--the) !important; }
 .ios .hoi-toi { background: rgba(20, 10, 25, .45); }
+
+/* Điện thoại: chú giải hiện đủ 3 mục (Còn sống · Đã mất · Dâu / rể) */
+@media (max-width: 640px), (orientation: landscape) and (max-height: 520px) {
+  .chu-giai .phu-gd { display: inline !important; }
+  .chu-giai { gap: 3px 8px; font-size: 10.5px; padding: 5px 9px; max-width: calc(100% - 124px); }
+  .chu-giai .o-mau { width: 11px; height: 9px; margin-right: 4px; }
+}
+
+/* XEM NGANG BẰNG NÚT: phả đồ xoay 90° phủ cả màn hình, ẩn thanh trên/dưới */
+.xoay-ngang .khung-cay {
+  position: fixed; inset: auto; top: 0; left: 100vw; width: 100vh; height: 100vw; z-index: 40;
+  transform-origin: top left; transform: rotate(90deg); background: var(--nen);
+}
+.xoay-ngang .dau, .xoay-ngang .thanh-duoi, .xoay-ngang .bang-gio, .xoay-ngang .bang-mau { visibility: hidden; }
+.xoay-ngang .dieu-khien { top: auto; bottom: calc(10px + env(safe-area-inset-left)); right: 14px; flex-direction: row; }
+.xoay-ngang .chu-giai { bottom: calc(10px + env(safe-area-inset-left)); }
+.xoay-ngang #zXoay { background: var(--grad); color: #fff; }
+@media (min-width: 900px) { #zXoay { display: none; } }
+.xoay-ngang .tab.hien { animation: none !important; transform: none !important; }
