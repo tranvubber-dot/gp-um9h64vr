@@ -478,3 +478,36 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
   .chu-giai { display: flex; left: 12px; bottom: calc(var(--duoi) + 10px); padding: 5px 10px; font-size: 11px; gap: 4px 10px; max-width: calc(100% - 140px); }
   .chu-giai .phu-gd { display: none; }
 }
+
+/* SỬA THEO Ý VŨ: màu NỀN vòng tròn ảnh = tình trạng (xanh lá còn sống, vàng đã mất); khung thẻ trở lại mảnh */
+:root { --grad-song: linear-gradient(135deg, #4cd97b, #15995a); --grad-vang: linear-gradient(135deg, #f9d35c, #c48a1c); }
+.the .nen { stroke: var(--the-vien) !important; stroke-width: 1 !important; }
+.the.dr .nen { stroke: var(--chu3) !important; stroke-dasharray: 5 4; stroke-opacity: .6; }
+.the .to-mau { fill: none !important; }
+.the .vong-song { stroke: var(--song); stroke-width: 1.5; opacity: .7; }
+.the .vong-mat { stroke: var(--mat); stroke-width: 1.5; opacity: .8; }
+.the.to-tien .nen { stroke: var(--nhan2) !important; stroke-width: 3 !important; stroke-dasharray: 6 4; }
+.the.chon .nen, .the.toi .nen { stroke: var(--nhan) !important; stroke-width: 3.2 !important; stroke-dasharray: none !important; }
+.cham, .cham.nu { background-image: var(--grad-song); box-shadow: 0 4px 10px rgba(21, 153, 90, .25) !important; }
+.cham.mat { background-image: var(--grad-vang); box-shadow: 0 4px 10px rgba(196, 138, 28, .28) !important; }
+.ct-dau .cham, .ct-dau .cham.mat { box-shadow: 0 6px 16px rgba(0, 0, 0, .15) !important; }
+.o-mau.song { background: var(--grad-song); } .o-mau.vang { background: var(--grad-vang); }
+
+/* SỬA LẦN 2 THEO Ý VŨ: TÔ NỀN CẢ THẺ — xanh lá nhạt = còn sống, vàng nhạt = đã mất. Ảnh tròn theo giới tính. */
+:root { --ns1: #edfaf1; --ns2: #d3f1dd; --nsv: #9fd8b1; --nv1: #fff6dc; --nv2: #f6e2a8; --nvv: #dcbc5e; }
+@media (prefers-color-scheme: dark) { :root { --ns1: #1d3a2a; --ns2: #14301f; --nsv: #2f6b46; --nv1: #3d3218; --nv2: #30260f; --nvv: #7a6224; } }
+#gNenSong stop:first-child { stop-color: var(--ns1); } #gNenSong stop:last-child { stop-color: var(--ns2); }
+#gNenVang stop:first-child { stop-color: var(--nv1); } #gNenVang stop:last-child { stop-color: var(--nv2); }
+.the .nen { fill: url(#gNenSong) !important; stroke: var(--nsv) !important; stroke-width: 1.2 !important; }
+.the.mat .nen { fill: url(#gNenVang) !important; stroke: var(--nvv) !important; }
+.the.dr .nen { stroke-dasharray: 5 4; stroke-opacity: 1; }
+.the.dr .nen { opacity: .85; }
+.the .vong-song, .the .vong-mat { display: none; }
+.the.to-tien .nen { stroke: var(--nhan2) !important; stroke-width: 3 !important; stroke-dasharray: 6 4; }
+.the.chon .nen, .the.toi .nen { stroke: var(--nhan) !important; stroke-width: 3.2 !important; stroke-dasharray: none !important; }
+.cham { background-image: var(--grad-nam) !important; box-shadow: 0 4px 10px rgba(58, 123, 213, .22) !important; }
+.cham.nu { background-image: var(--grad-nu) !important; box-shadow: 0 4px 10px rgba(255, 94, 138, .22) !important; }
+.ds-nguoi li.tt-song { background: linear-gradient(135deg, var(--ns1), var(--ns2)); }
+.ds-nguoi li.tt-mat { background: linear-gradient(135deg, var(--nv1), var(--nv2)); }
+.o-mau.song { background: linear-gradient(135deg, var(--ns1), var(--ns2)); border: 1.5px solid var(--nsv); border-radius: 3px; width: 13px; }
+.o-mau.vang { background: linear-gradient(135deg, var(--nv1), var(--nv2)); border: 1.5px solid var(--nvv); border-radius: 3px; width: 13px; }

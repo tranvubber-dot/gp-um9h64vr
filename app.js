@@ -249,7 +249,7 @@
     el('rect', { 'class': 'to-mau', x: 1.5, y: 1.5, width: CW - 3, height: CH - 3, rx: 18.5 }, vo);
     // ảnh tròn / chữ cái đầu trên nền chuyển màu
     var cx = 33, cy = CH / 2, r = 21;
-    el('circle', { cx: cx, cy: cy, r: r, fill: p.daMat ? 'url(#gMat)' : (p.gioi === 'nu' ? 'url(#gNu)' : 'url(#gNam)') }, vo);
+    el('circle', { cx: cx, cy: cy, r: r, fill: p.gioi === 'nu' ? 'url(#gNu)' : 'url(#gNam)' }, vo); // màu ảnh theo giới tính; nền thẻ theo tình trạng
     chu(vo, cx, cy + 6, tenGoi(p).charAt(0).toUpperCase(), 'chu-cai').setAttribute('text-anchor', 'middle');
     if (p.anh) {
       var im = el('image', { x: cx - r, y: cy - r, width: 2 * r, height: 2 * r, 'clip-path': 'url(#cTron)', preserveAspectRatio: 'xMidYMid slice' }, vo);
@@ -630,7 +630,7 @@
     $('#dsNguoi').innerHTML = ds.map(function (p, i) {
       var nh = p.dich ? '<span class="nhan son">Đích</span>' : (chuNam(p) ? '<span class="nhan">' + esc(chuNam(p)) + '</span>' : '');
       if (p.lienHe.dienThoai) nh = '<a class="nhan son" href="tel:' + esc(p.lienHe.dienThoai.replace(/[^\d+]/g, '')) + '" onclick="event.stopPropagation()">Gọi</a>' + nh;
-      return '<li style="--i:' + Math.min(i, 14) + '" data-mo="' + esc(p.id) + '">' + cham(p) + '<div class="chu"><div class="ten">' + esc(p.ten) + '</div><div class="mo">' +
+      return '<li style="--i:' + Math.min(i, 14) + '" data-mo="' + esc(p.id) + '" class="' + (p.daMat ? 'tt-mat' : 'tt-song') + '">' + cham(p) + '<div class="chu"><div class="ten">' + esc(p.ten) + '</div><div class="mo">' +
         esc([TOI && (p.id === TOI ? 'Bạn' : XH_TOI[p.id] && hoa(XH_TOI[p.id].goi)), 'Đời ' + p.doi, tenChi(p), moTaNgan(p)].filter(Boolean).join(' · ')) + '</div></div>' + nh + '</li>';
     }).join('') || '<li class="phu">Không tìm thấy ai.</li>';
   }
@@ -889,7 +889,7 @@
       '.ten{font-size:14px;font-weight:700;fill:#1e1a22}.nam-st{font-size:11.5px;fill:#6d6475}.chip-bac rect{fill:#f1ecef}.chip-bac text{font-size:10.5px;font-weight:600;fill:#6d6475}' +
       '.the.nam:not(.dr) .chip-bac rect{fill:#e3edfa}.the.nam:not(.dr) .chip-bac text{fill:#2f6fc2}.the.nu:not(.dr) .chip-bac rect{fill:#ffe6ee}.the.nu:not(.dr) .chip-bac text{fill:#d6416c}' +
       '.chu-cai{fill:#fff;font-size:17px;font-weight:800}.huy-dich rect{fill:url(#gKim)}.huy-dich text{fill:#fff;font-size:10px;font-weight:800}.vong-mat{fill:none;stroke:#d4a12a;stroke-width:2}.vong-song{fill:none;stroke:#2fb457;stroke-width:2}' +
-      '.the .nen{stroke:#2fb457;stroke-width:2.4}.the.mat .nen{stroke:#d4a12a;stroke-width:2.6}.to-mau{fill:rgba(47,180,87,.07)}.the.mat .to-mau{fill:rgba(212,161,42,.09)}';
+      '.to-mau{fill:none}.the .nen{fill:#e4f6ea;stroke:#a9dcb9}.the.mat .nen{fill:#fbefcc;stroke:#e2c46c}';
     var defs = svg.querySelector('defs').outerHTML;
     var tieuDe = 'Phả đồ ' + (DB.thongTin.ten_dong_ho || 'Họ Trần');
     var s = '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="' + b.x0 + ' ' + (b.y0 - 70) + ' ' + w + ' ' + h + '">' +
