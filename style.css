@@ -425,3 +425,17 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
 .xem-anh { position: fixed; inset: 0; z-index: 40; background: rgba(10, 6, 12, .92); display: grid; place-items: center; padding: 20px; cursor: zoom-out; animation: hien .2s ease both; }
 .xem-anh img { max-width: 100%; max-height: 82vh; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0, 0, .5); animation: bat var(--sp-bouncy-ms, 500ms) var(--sp-bouncy, ease) both; }
 .xem-anh .phu { position: absolute; bottom: calc(24px + env(safe-area-inset-bottom)); color: rgba(255, 255, 255, .7); }
+
+/* ĐIỆN THOẠI: thanh dưới dính sát mép dưới (kiểu thanh tab iOS), nút nằm trên vạch Home */
+@media (max-width: 640px) {
+  :root { --day: max(8px, env(safe-area-inset-bottom)); --duoi: calc(66px + var(--day)); }
+  .thanh-duoi {
+    left: 0; right: 0; bottom: 0; transform: none; width: 100%;
+    border-radius: 26px 26px 0 0; border-bottom: 0; border-left: 0; border-right: 0;
+    padding: 6px 8px var(--day);
+  }
+  .chi-bao { top: 6px; bottom: auto; height: 54px; left: 8px; width: calc((100% - 16px) / 5); }
+  .thanh-duoi button { height: 54px; justify-content: center; padding: 4px 2px; }
+  .chu-giai { bottom: calc(var(--duoi) + 8px); }
+  .ngan-keo { bottom: 0; left: 0; right: 0; border-radius: 28px 28px 0 0; padding-bottom: calc(20px + var(--day)); }
+}
