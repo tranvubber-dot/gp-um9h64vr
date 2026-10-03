@@ -86,6 +86,7 @@ function doPost(e) {
   var cd = chanDo_();
   if (cd.qua) return json_({ ok: false, loi: 'Thử sai quá nhiều lần, đợi 10 phút rồi thử lại' });
   if (!khoaDung_(body.k)) { cd.tang(); return json_({ ok: false, loi: 'can_link' }); }
+  if (body.lenh === 'sua') return suaThongTin_(body, cd);
 
   if (body.ma == null) { // lấy cây gia phả (không có phần riêng tư)
     var d = docSheet_();
@@ -95,6 +96,59 @@ function doPost(e) {
   if (!ma) return json_({ ok: false, loi: 'Ban quản trị chưa đặt mã gia đình' });
   if (String(body.ma || '').trim() !== String(ma).trim()) { cd.tang(); return json_({ ok: false, loi: 'Sai mã gia đình' }); }
   return json_({ ok: true, lienHe: docSheet_().rieng });
+}
+
+/* ---------- SỬA THÔNG TIN TỪ ĐIỆN THOẠI (cần MA_SUA) ----------
+   App gửi { k, lenh:'sua', maSua, ma:'T030', anh:'<jpeg base64>'?, truong:{ tieu_su, dien_thoai, zalo, facebook, noi_o } }
+   Ảnh lưu vào thư mục Drive "Ảnh gia phả" (ai có link mới xem), link ghi vào cột Ảnh của người đó. */
+var TRUONG_SUA = ['tieu_su', 'dien_thoai', 'zalo', 'facebook', 'noi_o'];
+function suaThongTin_(body, cd) {
+  var maSua = PropertiesService.getScriptProperties().getProperty('MA_SUA');
+  if (!maSua) return json_({ ok: false, loi: 'Ban quản trị chưa đặt mật mã sửa' });
+  if (String(body.maSua || '').trim() !== String(maSua).trim()) { cd.tang(); return json_({ ok: false, loi: 'Sai mật mã sửa' }); }
+  var lock = LockService.getDocumentLock(); lock.waitLock(20000);
+  try {
+    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_NGUOI);
+    var v = sh.getDataRange().getDisplayValues();
+    var cot = v[0].map(function (h) { var k = khoa_(h); return BIET_DANH[k] || k; });
+    var cMa = cot.indexOf('ma'), dong = -1;
+    for (var i = 1; i < v.length; i++) if (String(v[i][cMa]).trim() === String(body.ma || '').trim()) { dong = i + 1; break; }
+    if (dong < 0) return json_({ ok: false, loi: 'Không tìm thấy người này trong Sheet' });
+    var daSua = [], linkAnh = '';
+    if (body.anh) {
+      var bytes = Utilities.base64Decode(String(body.anh).replace(/^data:image\/\w+;base64,/, ''));
+      if (bytes.length > 4 * 1024 * 1024) return json_({ ok: false, loi: 'Ảnh quá lớn' });
+      var file = thuMucAnh_().createFile(Utilities.newBlob(bytes, 'image/jpeg', body.ma + '_' + Date.now() + '.jpg'));
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      linkAnh = 'https://drive.google.com/file/d/' + file.getId() + '/view';
+      var cAnh = cot.indexOf('anh');
+      if (cAnh >= 0) { sh.getRange(dong, cAnh + 1).setNumberFormat('@').setValue(linkAnh); daSua.push('ảnh'); }
+    }
+    var truong = body.truong || {};
+    TRUONG_SUA.forEach(function (k) {
+      if (!(k in truong)) return;
+      var c = cot.indexOf(k); if (c < 0) return;
+      sh.getRange(dong, c + 1).setNumberFormat('@').setValue(String(truong[k] || '').slice(0, 5000));
+      daSua.push(k);
+    });
+    SpreadsheetApp.flush();
+    return json_({ ok: true, daSua: daSua, anh: linkAnh });
+  } finally { lock.releaseLock(); }
+}
+function thuMucAnh_() {
+  var ten = 'Ảnh gia phả', it = DriveApp.getFoldersByName(ten);
+  return it.hasNext() ? it.next() : DriveApp.createFolder(ten);
+}
+/* Menu 🌳 Gia phả → Đặt mật mã sửa: tự gõ mật mã (ví dụ số điện thoại dễ nhớ). Không lưu trong code. */
+function datMaSua() {
+  var ui = SpreadsheetApp.getUi();
+  var r = ui.prompt('Mật mã sửa thông tin', 'Ai biết mật mã này mới đổi được ảnh / tiểu sử / liên lạc từ điện thoại.\nGõ mật mã mới (ít nhất 6 ký tự):', ui.ButtonSet.OK_CANCEL);
+  if (r.getSelectedButton() !== ui.Button.OK) return;
+  var m = String(r.getResponseText() || '').trim();
+  if (m.length < 6) { ui.alert('Mật mã quá ngắn, cần ít nhất 6 ký tự.'); return; }
+  PropertiesService.getScriptProperties().setProperty('MA_SUA', m);
+  thuMucAnh_(); // tạo sẵn thư mục ảnh trên Drive
+  ui.alert('Đã đặt mật mã sửa. Thư mục "Ảnh gia phả" đã có trên Google Drive.');
 }
 
 /* Tạo chìa khoá mới (link cũ sẽ hết tác dụng). Link mới hiện trong Nhật ký thực thi. */
@@ -267,6 +321,8 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('🌳 Gia phả')
     .addItem('Sắp xếp lại Sheet cho dễ nhìn', 'lamGonSheet')
     .addItem('Điền mã còn thiếu', 'dienMaConThieu')
+    .addSeparator()
+    .addItem('🔑 Đặt mật mã sửa (đổi ảnh từ điện thoại)', 'datMaSua')
     .addToUi();
 }
 

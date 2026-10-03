@@ -655,11 +655,87 @@
     }
 
     h += '<div class="hang-nut" style="margin-top:18px"><button class="nut chinh" data-di="cay">Xem trên phả đồ</button><button class="nut" data-di="xh">Tính xưng hô với người này</button></div>';
+    h += '<button class="nut-sua" data-di="sua"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>Đổi ảnh, sửa tiểu sử &amp; liên lạc</button>';
     $('#noiDungNgan').innerHTML = h;
     $('#noiDungNgan').dataset.id = id;
     var n = $('#nganKeo'); n.classList.add('mo'); n.setAttribute('aria-hidden', 'false'); n.scrollTop = 0;
     $('#manChe').hidden = window.innerWidth >= 900;
   }
+  /* ---------- Sửa thông tin từ điện thoại: ảnh, tiểu sử, liên lạc → ghi thẳng vào Google Sheet ---------- */
+  var ANH_MOI = null;
+  function moSua(id) {
+    var p = DB.byId[id]; if (!p) return;
+    if (LA_MAU) { bao('Chỉ sửa được khi app đã nối Google Sheet'); return; }
+    ANH_MOI = null;
+    var L = p.lienHe || {}, coLH = !!LH;
+    var o = function (k, nhan, gt, kieu, goiY) {
+      return '<label class="o-sua"><span>' + nhan + '</span><input data-truong="' + k + '" data-cu="' + esc(gt || '') + '" value="' + esc(gt || '') + '" type="' + (kieu || 'text') + '" placeholder="' + esc(goiY || '') + '" autocomplete="off"></label>';
+    };
+    var h = '<div class="ct-dau">' + cham(p) + '<div><h3>Sửa: ' + esc(p.ten) + '</h3><p class="phu">Lưu xong, ai mở app cũng thấy bản mới.</p></div></div>';
+    h += '<div class="sua-anh"><div class="khung-anh" id="suaXem">' + (p.anh ? '<img src="' + esc(p.anh) + '" referrerpolicy="no-referrer" alt="">' : '<span>Chưa có ảnh</span>') + '</div>' +
+      '<label class="nut chinh chon-anh">📷 Chọn / chụp ảnh<input id="suaFile" type="file" accept="image/*" hidden></label></div>';
+    h += '<label class="o-sua"><span>Tiểu sử</span><textarea data-truong="tieu_su" data-cu="' + esc(p.tieuSu || '') + '" rows="6" placeholder="Quê quán, học hành, công việc, kỷ niệm…">' + esc(p.tieuSu || '') + '</textarea></label>';
+    h += o('dien_thoai', 'Điện thoại', L.dienThoai, 'tel', '09…') + o('zalo', 'Zalo (số)', L.zalo, 'tel', '') +
+      o('facebook', 'Facebook', L.facebook, 'url', 'link hoặc tên tài khoản') + o('noi_o', 'Nơi ở', p.noiO, 'text', '');
+    if (!coLH && !p.daMat) h += '<p class="phu" style="margin:-4px 2px 10px">Liên lạc đang ẩn (chưa nhập mã gia đình). Ô nào để trống sẽ giữ nguyên như cũ.</p>';
+    h += '<label class="o-sua"><span>Mật mã sửa</span><input id="suaMa" type="password" value="' + esc(doc('maSua', '') || '') + '" placeholder="Hỏi trưởng họ" autocomplete="off"></label>';
+    h += '<div class="hang-nut" style="margin-top:14px"><button class="nut chinh" id="nutLuuSua">Lưu lên gia phả</button><button class="nut" data-di="huySua">Huỷ</button></div>';
+    $('#noiDungNgan').innerHTML = h;
+    $('#nganKeo').scrollTop = 0;
+    $('#suaFile').onchange = function () {
+      var f = this.files && this.files[0]; if (!f) return;
+      thuNhoAnh(f, 1000).then(function (du) { ANH_MOI = du; $('#suaXem').innerHTML = '<img src="' + du + '" alt="">'; })
+        .catch(function () { bao('Không đọc được ảnh này, thử ảnh khác'); });
+    };
+    $('#nutLuuSua').onclick = function () { luuSua(id, this); };
+  }
+  function thuNhoAnh(file, toiDa) {
+    return new Promise(function (ok, loi) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var k = Math.min(1, toiDa / Math.max(img.naturalWidth, img.naturalHeight));
+        var c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+        var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url); ok(c.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); loi(); };
+      img.src = url;
+    });
+  }
+  function luuSua(id, nut) {
+    var ma = $('#suaMa').value.trim();
+    if (!ma) { bao('Nhập mật mã sửa'); $('#suaMa').focus(); return; }
+    var truong = {}, co = !!ANH_MOI;
+    $('#noiDungNgan').querySelectorAll('[data-truong]').forEach(function (i) {
+      var v = i.value.trim(), cu = i.getAttribute('data-cu') || '';
+      if (v === cu) return;
+      if (!v && !LH && i.tagName === 'INPUT' && i.dataset.truong !== 'noi_o') return; // liên lạc đang ẩn: trống = giữ nguyên
+      truong[i.dataset.truong] = v; co = true;
+    });
+    if (!co) { bao('Chưa thay đổi gì'); return; }
+    nut.disabled = true; nut.textContent = ANH_MOI ? 'Đang tải ảnh lên…' : 'Đang lưu…';
+    var body = { k: doc('khoa', null), lenh: 'sua', maSua: ma, ma: id, truong: truong };
+    if (ANH_MOI) body.anh = ANH_MOI;
+    fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.ok) throw new Error(d && d.loi || 'Không lưu được');
+        ghi('maSua', ma);
+        if (LH) { // cập nhật liên lạc đã mở khoá trên máy này
+          var x = LH[id] = LH[id] || {};
+          ['dien_thoai', 'zalo', 'facebook', 'noi_o'].forEach(function (k) { if (k in truong) x[k] = truong[k]; });
+          ghi('lienhe', LH);
+        }
+        bao('Đã lưu lên gia phả ✓');
+        return taiDuLieu(true).then(function (m) { RAW = m; dungLai(true); moChiTiet(id); });
+      })
+      .catch(function (e) {
+        bao(e && e.message && !/fetch|network/i.test(e.message) ? e.message : 'Không kết nối được. Thử lại khi có mạng.');
+        nut.disabled = false; nut.textContent = 'Lưu lên gia phả';
+        if (e && /mật mã/i.test(e.message || '')) { ghi('maSua', null); $('#suaMa').select(); }
+      });
+  }
+
   function dongNgan() {
     $('#nganKeo').classList.remove('mo'); $('#nganKeo').setAttribute('aria-hidden', 'true'); $('#manChe').hidden = true;
     danhDauChon(null);
@@ -681,6 +757,8 @@
       else { XH_CD = 'hai'; ghi('xhCheDo', 'hai'); $('#xhA').value = id; }
       chuyenTab('xungho'); dongNgan(); tinhXH();
     }
+    if (di === 'sua') moSua(id);
+    if (di === 'huySua') moChiTiet(id);
     if (di === 'mokhoa') { dongNgan(); chuyenTab('dongho'); setTimeout(function () { var i = $('#oMa'); if (i) { i.scrollIntoView({ block: 'center' }); i.focus(); } }, 50); }
   });
   // vuốt xuống để đóng ngăn kéo (điện thoại)

@@ -583,3 +583,17 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
 .xoay-ngang #zXoay { background: var(--grad); color: #fff; }
 @media (min-width: 900px) { #zXoay { display: none; } }
 .xoay-ngang .tab.hien { animation: none !important; transform: none !important; }
+
+/* ---------- Sửa thông tin từ điện thoại ---------- */
+.nut-sua { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin: 4px 0 8px; padding: 13px 14px; border-radius: 16px; border: 1.5px dashed var(--kinh-vien); background: transparent; color: var(--nhan2); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+.nut-sua svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.nut-sua:active { transform: scale(.97); }
+.sua-anh { display: flex; align-items: center; gap: 14px; margin: 14px 0; }
+.sua-anh .khung-anh { width: 96px; height: 96px; flex: none; border-radius: 50%; overflow: hidden; background: var(--vach); display: grid; place-items: center; font-size: 12px; color: var(--chu3); text-align: center; }
+.sua-anh .khung-anh img { width: 100%; height: 100%; object-fit: cover; }
+.chon-anh { cursor: pointer; }
+.o-sua { display: block; margin: 0 0 12px; }
+.o-sua span { display: block; font-size: 13px; color: var(--chu2); margin: 0 0 5px 2px; }
+.o-sua input, .o-sua textarea { width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--kinh-vien); background: var(--kinh-dam); color: inherit; font: inherit; font-size: 16px; outline: none; resize: vertical; }
+.o-sua input:focus, .o-sua textarea:focus { border-color: var(--nhan2); }
+.nut:disabled { opacity: .6; }
