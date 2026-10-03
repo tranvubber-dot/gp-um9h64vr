@@ -1211,5 +1211,18 @@
     if (!TOI && !doc('boQuaToi', false)) setTimeout(moHoiToi, 500);
   }); }
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(function () {});
+
+  /* App trên màn hình chính iPhone không tải lại khi mở lên: tự kiểm tra bản mới + dữ liệu mới mỗi lần quay lại app. */
+  var AN_LUC = 0, PB = (([].slice.call(document.scripts).map(function (x) { return x.src; }).filter(function (x) { return /app\.js\?v=/.test(x); })[0] || '').match(/v=([\d.]+)/) || [])[1];
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { AN_LUC = Date.now(); return; }
+    if (!AN_LUC || Date.now() - AN_LUC < 20000 || LA_MAU || !RAW) return;
+    var dangSua = !!document.querySelector('#nganKeo.mo #nutLuuSua');
+    fetch('index.html?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (h) {
+      var m = h.match(/app\.js\?v=([\d.]+)/);
+      if (m && PB && m[1] !== PB && !dangSua) { location.reload(); return; }
+      if (!dangSua) taiDuLieu().catch(function () {});
+    }).catch(function () {});
+  });
   window.GP = { get DB() { return DB; }, V: V, canhGiua: canhGiua, moChiTiet: moChiTiet, chuyenTab: chuyenTab };
 })();
