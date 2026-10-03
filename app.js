@@ -81,7 +81,10 @@
   /* ---------- lò xo: mô phỏng rồi xuất thành CSS linear() ---------- */
   (function caiLoXo() {
     var giam = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var coLinear = window.CSS && CSS.supports && CSS.supports('transition-timing-function', 'linear(0, 1)');
+    // iOS/Safari 26 chạy linear() ở luồng chính (WebKit bug 312407) → trên iPhone/iPad dùng cubic-bezier có nảy
+    var IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (IOS) document.documentElement.classList.add('ios');
+    var coLinear = !IOS && window.CSS && CSS.supports && CSS.supports('transition-timing-function', 'linear(0, 1)');
     var KIEU = { bouncy: [260, 15], soft: [170, 20], wobbly: [180, 10], sheet: [300, 24] };
     var r = document.documentElement.style;
     Object.keys(KIEU).forEach(function (n) {

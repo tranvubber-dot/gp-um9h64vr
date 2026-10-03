@@ -557,3 +557,10 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
   -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
 }
 .ds-gio li, .ds-nguoi li:not(.tt-song):not(.tt-mat) { background: var(--kinh-dam); }
+
+/* iPhone/iPad: phần tử có kính mờ mà chuyển động → nền đục (backdrop-filter + animation gây giật trên WebKit) */
+.ios .ngan-keo, .ios .hop-toi, .ios .bang-gio, .ios .thong-bao, .ios .man-che, .ios .hoi-toi {
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+.ios .ngan-keo, .ios .hop-toi, .ios .bang-gio, .ios .thong-bao { background: var(--the) !important; }
+.ios .hoi-toi { background: rgba(20, 10, 25, .45); }
