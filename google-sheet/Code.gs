@@ -86,7 +86,10 @@ function doPost(e) {
   var cd = chanDo_();
   if (cd.qua) return json_({ ok: false, loi: 'Thử sai quá nhiều lần, đợi 10 phút rồi thử lại' });
   if (!khoaDung_(body.k)) { cd.tang(); return json_({ ok: false, loi: 'can_link' }); }
-  if (body.lenh === 'sua') return suaThongTin_(body, cd);
+  if (body.lenh === 'sua') {
+    try { return suaThongTin_(body, cd); }
+    catch (err) { console.error('suaThongTin_: ' + err + ' | ' + (err && err.stack)); return json_({ ok: false, loi: 'Lỗi máy chủ: ' + (err && err.message || err) }); }
+  }
 
   if (body.ma == null) { // lấy cây gia phả (không có phần riêng tư)
     var d = docSheet_();
@@ -149,6 +152,18 @@ function datMaSua() {
   PropertiesService.getScriptProperties().setProperty('MA_SUA', m);
   thuMucAnh_(); // tạo sẵn thư mục ảnh trên Drive
   ui.alert('Đã đặt mật mã sửa. Thư mục "Ảnh gia phả" đã có trên Google Drive.');
+}
+
+/* Chạy thử phần lưu ảnh lên Drive (chọn hàm này rồi bấm ▶ Chạy). Tạo 1 ảnh nhỏ rồi xoá luôn. */
+function thuDrive() {
+  var thuMuc = thuMucAnh_();
+  Logger.log('Thư mục: ' + thuMuc.getName() + ' ' + thuMuc.getUrl());
+  var png = Utilities.base64Decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
+  var file = thuMuc.createFile(Utilities.newBlob(png, 'image/png', 'thu.png'));
+  Logger.log('Tạo file OK: ' + file.getId());
+  try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); Logger.log('Chia sẻ công khai OK'); }
+  catch (e) { Logger.log('Chia sẻ LỖI: ' + e); }
+  file.setTrashed(true);
 }
 
 /* Tạo chìa khoá mới (link cũ sẽ hết tác dụng). Link mới hiện trong Nhật ký thực thi. */

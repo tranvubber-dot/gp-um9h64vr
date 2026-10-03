@@ -116,6 +116,19 @@
     clearTimeout(bao._t); bao._t = setTimeout(function () { t.hidden = true; }, 2600);
   }
 
+  /* Ảnh Drive vừa tải lên cần vài giây để Google tạo hình thu nhỏ: lỗi thì thử lại, đừng bỏ ngay. */
+  function thuLaiAnh(im, boDi) {
+    var n = +(im.getAttribute('data-thu') || 0), goc = im.getAttribute('data-goc') || im.getAttribute('href') || im.getAttribute('src') || '';
+    if (n >= 5 || /^data:/.test(goc)) { boDi(); return; }
+    im.setAttribute('data-goc', goc); im.setAttribute('data-thu', n + 1);
+    setTimeout(function () {
+      var u = goc + (goc.indexOf('?') < 0 ? '?' : '&') + 'thu=' + (n + 1);
+      if (im.tagName.toLowerCase() === 'img') im.src = u; else im.setAttribute('href', u);
+    }, [1500, 3000, 6000, 12000, 20000][n]);
+  }
+  window.GP_anhLoi = function (im) { thuLaiAnh(im, function () { var k = im.closest('.anh-lon'); if (k) k.remove(); }); };
+  var ANH_TAM = {}; // ảnh vừa đổi trên máy này: hiện ngay, không chờ Google
+
   /* ---------- phần riêng tư: chỉ hiện khi có mã gia đình ---------- */
   var COT_RIENG = ['dien_thoai', 'zalo', 'facebook', 'noi_o'];
   function conSongDong(r) { return !(r.ngay_mat || r.da_mat || r.ngay_gio); }
@@ -169,6 +182,7 @@
 
   function dungLai(giuViTri) {
     DB = window.GiaPhaDB.dung({ thongTin: RAW.thongTin, nguoi: ghepRiengTu(RAW.nguoi) }, { traiTruocGaiSau: CD.traiTruocGaiSau });
+    Object.keys(ANH_TAM).forEach(function (id) { if (DB.byId[id]) DB.byId[id].anh = ANH_TAM[id]; });
     tinhXungToi();
     $('#dangTai').hidden = true;
     veDau(); veCay(giuViTri); veTraCuu(); veXungHo(); veGio(); veDongHo(); veNhacGio();
@@ -327,7 +341,7 @@
     chu(vo, cx, cy + 6, tenGoi(p).charAt(0).toUpperCase(), 'chu-cai').setAttribute('text-anchor', 'middle');
     if (p.anh) {
       var im = el('image', { x: cx - r, y: cy - r, width: 2 * r, height: 2 * r, 'clip-path': 'url(#cTron)', preserveAspectRatio: 'xMidYMid slice' }, vo);
-      im.addEventListener('error', function () { im.remove(); });
+      im.addEventListener('error', function () { thuLaiAnh(im, function () { im.remove(); }); });
       im.setAttribute('href', p.anh);
       el('circle', { cx: cx, cy: cy, r: r, fill: 'none', stroke: 'rgba(255,255,255,.9)', 'stroke-width': 2 }, vo);
     }
@@ -599,7 +613,7 @@
     var huy = ['Đời ' + p.doi, tenChi(p), p.dauRe ? vaiDauRe(p) : (p === DB.thuyTo ? 'Thủy tổ' : p.thuBac), p.daMat ? 'Đã mất' : '']
       .filter(Boolean).map(function (x) { return '<span class="huy">' + esc(x) + '</span>'; }).join('');
     if (p.dich) huy = '<span class="huy ga">★ Dòng đích</span>' + huy;
-    var h = p.anh ? '<div class="anh-lon" data-xem-anh="' + esc(p.anh) + '"><img src="' + esc(p.anh) + '" alt="' + esc(p.ten) + '" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"><span class="phong">⤢</span></div>' : '';
+    var h = p.anh ? '<div class="anh-lon" data-xem-anh="' + esc(p.anh) + '"><img src="' + esc(p.anh) + '" alt="' + esc(p.ten) + '" referrerpolicy="no-referrer" onerror="GP_anhLoi(this)"><span class="phong">⤢</span></div>' : '';
     h += '<div class="ct-dau">' + cham(p) + '<div><h3>' + esc(p.ten) + '</h3><p class="phu">' + huy + '</p></div></div>';
     if (TOI && XH_TOI[id] && XH_TOI[id].goi) h += '<div class="xh-toi"><div><small>Bạn gọi là</small><b>' + esc(XH_TOI[id].goi) + '</b></div><div><small>Người này gọi bạn là</small><b>' + esc(XH_TOI[id].duocGoi || '—') + '</b></div></div>';
     else if (id === TOI) h += '<div class="xh-toi"><div><small>Đây là</small><b>bạn</b></div></div>';
@@ -721,6 +735,7 @@
       .then(function (d) {
         if (!d || !d.ok) throw new Error(d && d.loi || 'Không lưu được');
         ghi('maSua', ma);
+        if (body.anh) ANH_TAM[id] = body.anh;
         if (LH) { // cập nhật liên lạc đã mở khoá trên máy này
           var x = LH[id] = LH[id] || {};
           ['dien_thoai', 'zalo', 'facebook', 'noi_o'].forEach(function (k) { if (k in truong) x[k] = truong[k]; });

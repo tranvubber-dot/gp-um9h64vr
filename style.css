@@ -323,12 +323,12 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
 .tieu-su { white-space: pre-line; line-height: 1.65; }
 
 .thong-bao {
-  position: fixed; left: 50%; top: calc(14px + env(safe-area-inset-top)); z-index: 20; transform: translateX(-50%);
-  padding: 11px 18px; border-radius: 99px; font-size: 14px; font-weight: 600; max-width: 90vw; text-align: center;
+  position: fixed; left: 50%; top: 50%; z-index: 80; transform: translate(-50%, -50%); pointer-events: none;
+  padding: 16px 24px; border-radius: 22px; font-size: 16px; font-weight: 700; line-height: 1.4; max-width: min(86vw, 360px); text-align: center;
   background: var(--kinh-dam); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border: 1px solid var(--kinh-vien); box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
   animation: tha-xuong var(--sp-bouncy-ms, 500ms) var(--sp-bouncy, ease) both;
 }
-@keyframes tha-xuong { from { opacity: 0; transform: translate(-50%, -30px) scale(.8); } }
+@keyframes tha-xuong { from { opacity: 0; transform: translate(-50%, -50%) scale(.7); } }
 @media (max-width: 420px) {
   .the-so { grid-template-columns: repeat(2, 1fr); }
 }
