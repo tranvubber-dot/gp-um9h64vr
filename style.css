@@ -511,3 +511,8 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
 .ds-nguoi li.tt-mat { background: linear-gradient(135deg, var(--nv1), var(--nv2)); }
 .o-mau.song { background: linear-gradient(135deg, var(--ns1), var(--ns2)); border: 1.5px solid var(--nsv); border-radius: 3px; width: 13px; }
 .o-mau.vang { background: linear-gradient(135deg, var(--nv1), var(--nv2)); border: 1.5px solid var(--nvv); border-radius: 3px; width: 13px; }
+
+/* SỬA LẦN 3: người đã mất → nền XÁM (thay vàng) */
+:root { --nv1: #f3f2f5; --nv2: #dfdde4; --nvv: #b8b4c0; }
+@media (prefers-color-scheme: dark) { :root { --nv1: #2c2b31; --nv2: #232228; --nvv: #4d4a55; } }
+.the.mat .ten { color: inherit; }
