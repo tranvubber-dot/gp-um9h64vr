@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&text=%E9%99%B3&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.4.1">
+<link rel="stylesheet" href="style.css?v=1.5.0">
 </head>
 <body>
 <div class="nen-loang" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -95,11 +95,16 @@
   <section id="tab-xungho" class="tab">
     <div class="trang">
       <h2>Tính xưng hô</h2>
-      <p class="phu">Chọn hai người, app cho biết hai người gọi nhau là gì (theo cách gọi miền Bắc).</p>
+      <div class="che-do kinh" id="xhCheDo">
+        <button data-cd="toi" class="chon">Tôi gọi người khác</button>
+        <button data-cd="hai">Hai người bất kỳ</button>
+      </div>
+      <p class="phu" id="xhMoTa"></p>
       <div class="chon-hai kinh">
-        <label>Người thứ nhất<select id="xhA"></select></label>
+        <div class="la-toi" id="xhToi"></div>
+        <label id="xhNhanA">Người thứ nhất<select id="xhA"></select></label>
         <button class="nut-doi" id="xhDoi" aria-label="Đổi chỗ hai người">⇅</button>
-        <label>Người thứ hai<select id="xhB"></select></label>
+        <label id="xhNhanB">Người thứ hai<select id="xhB"></select></label>
       </div>
       <div id="xhKQ" class="xh-kq"></div>
     </div>
@@ -190,11 +195,11 @@
   </div>
 </div>
 
-<script src="config.js?v=1.4.1"></script>
-<script src="data-mau.js?v=1.4.1"></script>
-<script src="amlich.js?v=1.4.1"></script>
-<script src="db.js?v=1.4.1"></script>
-<script src="xungho.js?v=1.4.1"></script>
-<script src="app.js?v=1.4.1"></script>
+<script src="config.js?v=1.5.0"></script>
+<script src="data-mau.js?v=1.5.0"></script>
+<script src="amlich.js?v=1.5.0"></script>
+<script src="db.js?v=1.5.0"></script>
+<script src="xungho.js?v=1.5.0"></script>
+<script src="app.js?v=1.5.0"></script>
 </body>
 </html>

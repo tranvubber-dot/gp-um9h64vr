@@ -439,3 +439,16 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
   .chu-giai { bottom: calc(var(--duoi) + 8px); }
   .ngan-keo { bottom: 0; left: 0; right: 0; border-radius: 28px 28px 0 0; padding-bottom: calc(20px + var(--day)); }
 }
+
+/* XƯNG HÔ: 2 chế độ */
+.che-do { position: relative; display: grid; grid-template-columns: 1fr 1fr; padding: 4px; border-radius: 16px; margin: 8px 0 6px; }
+.che-do button { border: 0; background: transparent; padding: 10px 6px; border-radius: 12px; font-weight: 700; font-size: 14px; color: var(--chu2);
+  transition: background .25s, color .25s, transform var(--sp-bouncy-ms, 500ms) var(--sp-bouncy, ease); }
+.che-do button.chon { background: var(--kinh-dam); color: var(--nhan); box-shadow: 0 3px 10px var(--bong-the); }
+.che-do button:active { transform: scale(.95); transition-duration: 90ms; }
+.la-toi { display: flex; align-items: center; gap: 12px; padding: 4px 2px 2px; }
+.la-toi .cham { width: 46px; height: 46px; font-size: 18px; }
+.la-toi .chu { flex: 1; min-width: 0; }
+.la-toi small { display: block; font-size: 12px; font-weight: 700; color: var(--chu2); text-transform: uppercase; letter-spacing: .04em; }
+.la-toi b { font-size: 17px; }
+.la-toi .nut { padding: 8px 14px; font-size: 13.5px; }

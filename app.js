@@ -582,7 +582,11 @@
     var d = e.target.closest('[data-di]'); if (!d) return;
     var id = $('#noiDungNgan').dataset.id, di = d.getAttribute('data-di');
     if (di === 'cay') { var giu = id; chuyenTab('phado'); if (window.innerWidth < 900) dongNgan(); danhDauChon(giu); setTimeout(function () { canhGiua(giu, true); }, 60); }
-    if (di === 'xh') { $('#xhA').value = id; chuyenTab('xungho'); dongNgan(); tinhXH(); }
+    if (di === 'xh') {
+      if (TOI && DB.byId[TOI] && id !== TOI) { XH_CD = 'toi'; ghi('xhCheDo', 'toi'); $('#xhB').value = id; }
+      else { XH_CD = 'hai'; ghi('xhCheDo', 'hai'); $('#xhA').value = id; }
+      chuyenTab('xungho'); dongNgan(); tinhXH();
+    }
     if (di === 'mokhoa') { dongNgan(); chuyenTab('dongho'); setTimeout(function () { var i = $('#oMa'); if (i) { i.scrollIntoView({ block: 'center' }); i.focus(); } }, 50); }
   });
   // vuốt xuống để đóng ngăn kéo (điện thoại)
@@ -650,13 +654,48 @@
     $('#xhB').value = DB.byId[giuB] ? giuB : (macB || DB.thuyTo || DB.list[0]).id;
     tinhXH();
   }
+  var XH_CD = doc('xhCheDo', 'toi'); // 'toi' = tôi gọi người khác, 'hai' = hai người bất kỳ
+  function apCheDoXH() {
+    var cd = (XH_CD === 'toi' && TOI && DB.byId[TOI]) ? 'toi' : (XH_CD === 'toi' ? 'can-chon' : 'hai');
+    document.querySelectorAll('#xhCheDo button').forEach(function (b) { b.classList.toggle('chon', b.getAttribute('data-cd') === XH_CD); });
+    var toi = $('#xhToi');
+    if (cd === 'toi') {
+      var p = DB.byId[TOI];
+      toi.innerHTML = cham(p) + '<div class="chu"><small>Bạn là</small><b>' + esc(p.ten) + '</b></div><button class="nut" data-di="doiToi">Đổi</button>';
+      $('#xhA').value = TOI;
+      $('#xhMoTa').textContent = 'Chọn một người trong họ, app cho biết bạn gọi người đó là gì và người đó gọi bạn là gì.';
+      $('#xhNhanB').firstChild.textContent = 'Người bạn muốn hỏi';
+    } else if (cd === 'can-chon') {
+      toi.innerHTML = '<div class="chu"><small>Bạn là</small><b>Chưa chọn</b></div><button class="nut chinh" data-di="doiToi">Chọn tôi là ai</button>';
+      $('#xhMoTa').textContent = 'Hãy cho app biết bạn là ai trước, rồi chọn người muốn hỏi.';
+      $('#xhNhanB').firstChild.textContent = 'Người bạn muốn hỏi';
+    } else {
+      $('#xhMoTa').textContent = 'Chọn hai người bất kỳ trong họ, app cho biết hai người gọi nhau là gì (theo cách gọi miền Bắc).';
+      $('#xhNhanB').firstChild.textContent = 'Người thứ hai';
+    }
+    toi.hidden = cd === 'hai';
+    $('#xhNhanA').hidden = cd !== 'hai';
+    $('#xhDoi').hidden = cd !== 'hai';
+    return cd;
+  }
+  $('#xhCheDo').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-cd]'); if (!b) return;
+    XH_CD = b.getAttribute('data-cd'); ghi('xhCheDo', XH_CD); tinhXH();
+  });
+  $('#xhToi').addEventListener('click', function (e) { if (e.target.closest('[data-di="doiToi"]')) moHoiToi(); });
+
   function tinhXH() {
+    var cd = apCheDoXH();
+    if (cd === 'can-chon') { $('#xhKQ').innerHTML = ''; return; }
     var a = $('#xhA').value, b = $('#xhB').value;
+    if (cd === 'toi' && b === a) { $('#xhKQ').innerHTML = '<p class="phu" style="text-align:center">Chọn một người khác bạn ở ô bên trên.</p>'; return; }
     if (!DB.byId[a] || !DB.byId[b]) return;
     var r1 = window.XungHo.goi(DB, a, b), r2 = window.XungHo.goi(DB, b, a);
     var A = DB.byId[a], B = DB.byId[b];
+    function ten(x) { return cd === 'toi' && x.id === TOI ? 'Bạn' : x.ten; }
     function the(x, y, r) {
-      return '<div class="the-xh kinh"><div class="ai"><b>' + esc(x.ten) + '</b> gọi <b>' + esc(y.ten) + '</b> là</div><div class="tu">' +
+      var nguoiNghe = cd === 'toi' && y.id === TOI ? 'bạn' : '<b>' + esc(y.ten) + '</b>';
+      return '<div class="the-xh kinh"><div class="ai"><b>' + esc(ten(x)) + '</b> gọi ' + nguoiNghe + ' là</div><div class="tu">' +
         esc(r.tu || '—') + '</div></div>';
     }
     var h = the(A, B, r1) + the(B, A, r2);
