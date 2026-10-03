@@ -97,7 +97,7 @@
     DB = window.GiaPhaDB.dung({ thongTin: RAW.thongTin, nguoi: ghepRiengTu(RAW.nguoi) }, { traiTruocGaiSau: CD.traiTruocGaiSau });
     tinhXungToi();
     $('#dangTai').hidden = true;
-    veDau(); veCay(giuViTri); veTraCuu(); veXungHo(); veGio(); veDongHo();
+    veDau(); veCay(giuViTri); veTraCuu(); veXungHo(); veGio(); veDongHo(); veNhacGio();
   }
 
   /* ---------- "Bạn là ai?" ---------- */
@@ -671,11 +671,49 @@
       return { p: p, g: window.AmLich.gioSapToi(p.gio.d, p.gio.m, hn) };
     }).filter(function (x) { return x.g; }).sort(function (a, b) { return a.g.soNgay - b.g.soNgay; });
   }
+  /* ---------- nhắc giỗ ---------- */
+  function tenNhacGio(p) { // "Bà nội Đặng Thị Nga" nếu biết người xem là ai, không thì "bà Đặng Thị Nga"
+    var xh = TOI && XH_TOI[p.id] && XH_TOI[p.id].goi;
+    if (xh) return hoa(xh) + ' ' + p.ten;
+    return (p.gioi === 'nam' ? 'ông ' : 'bà ') + p.ten;
+  }
+  function chuConNgay(n) { return n === 0 ? 'Hôm nay' : n === 1 ? 'Ngày mai' : 'Còn ' + n + ' ngày'; }
+  function ngayKey() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function veNhacGio() {
+    var gan = dsGio().filter(function (x) { return x.g.soNgay <= 7; });
+    var so = $('#soGio');
+    so.hidden = !gan.length; so.textContent = gan.length;
+    var b = $('#bangGio');
+    if (!gan.length || doc('anGio', '') === ngayKey()) { b.hidden = true; return; }
+    var x = gan[0], tien = new Date(x.g.date - 864e5);
+    var them = gan.length > 1 ? ' · và ' + (gan.length - 1) + ' giỗ khác trong tuần' : '';
+    b.innerHTML = '<span class="nhang">🕯️</span><div class="chu"><b>' + esc(chuConNgay(x.g.soNgay)) + ': giỗ ' + esc(tenNhacGio(x.p)) + '</b><br>' +
+      'Ngày ' + x.p.gio.d + '/' + x.p.gio.m + ' âm (' + x.g.date.getDate() + '/' + (x.g.date.getMonth() + 1) + ')' +
+      (x.g.soNgay > 0 ? ' · tiên thường tối ' + tien.getDate() + '/' + (tien.getMonth() + 1) : '') + esc(them) + '</div>' +
+      '<button class="x" aria-label="Ẩn hôm nay">×</button>';
+    b.dataset.id = x.p.id; b.hidden = false;
+  }
+  $('#bangGio').addEventListener('click', function (e) {
+    if (e.target.closest('.x')) { ghi('anGio', ngayKey()); this.hidden = true; return; }
+    if (gioCount() > 1) { chuyenTab('gio'); return; }
+    moChiTiet(this.dataset.id);
+  });
+  function gioCount() { return dsGio().filter(function (x) { return x.g.soNgay <= 7; }).length; }
+
   function veGio() {
     var hn = new Date(), am = window.AmLich.solar2lunar(hn.getDate(), hn.getMonth() + 1, hn.getFullYear());
     $('#homNay').innerHTML = '<div class="nho">Hôm nay</div><div class="lon">' + THU[hn.getDay()] + ', ' + hn.toLocaleDateString('vi-VN') + '</div>' +
       '<div class="am">Âm lịch: ngày ' + am[0] + ' tháng ' + am[1] + (am[3] ? ' (nhuận)' : '') + ' năm ' + window.AmLich.canChiNam(am[2]) + '</div>';
     var ds = dsGio();
+    var sap = ds.filter(function (x) { return x.g.soNgay <= 30; }).slice(0, 3);
+    if (sap.length) {
+      $('#homNay').insertAdjacentHTML('beforeend', '<div class="sap-gio">' + sap.map(function (x) {
+        var tien = new Date(x.g.date - 864e5);
+        return '<div class="muc" data-mo="' + esc(x.p.id) + '"><span class="dem">' + esc(chuConNgay(x.g.soNgay)) + '</span><div class="ct"><b>Giỗ ' + esc(tenNhacGio(x.p)) + '</b><br><small>' +
+          THU[x.g.date.getDay()] + ' ' + x.g.date.getDate() + '/' + (x.g.date.getMonth() + 1) + ' (' + x.p.gio.d + '/' + x.p.gio.m + ' âm)' +
+          (x.g.soNgay > 0 ? ' · tiên thường tối ' + tien.getDate() + '/' + (tien.getMonth() + 1) : '') + '</small></div></div>';
+      }).join('') + '</div>');
+    }
     $('#dsGio').innerHTML = ds.map(function (x, i) {
       var d = x.g.date, p = x.p, tien = new Date(d - 864e5);
       var con = x.g.soNgay === 0 ? '<b>Hôm nay</b>' : x.g.soNgay === 1 ? '<b>Ngày mai</b>' : '<b>' + x.g.soNgay + '</b>ngày nữa';
@@ -685,6 +723,7 @@
         '<div class="phu" style="font-size:12px">Tiên thường: tối ' + tien.getDate() + '/' + (tien.getMonth() + 1) + '</div></div><div class="con">' + con + '</div></li>';
     }).join('') || '<li class="phu">Chưa có ai được ghi ngày giỗ. Điền cột "Ngày giỗ" (ngày/tháng âm lịch) trong Google Sheet.</li>';
   }
+  $('#homNay').addEventListener('click', function (e) { var m = e.target.closest('[data-mo]'); if (m) moChiTiet(m.getAttribute('data-mo')); });
   $('#dsGio').addEventListener('click', function (e) { var li = e.target.closest('[data-mo]'); if (li) moChiTiet(li.getAttribute('data-mo')); });
 
   function taiFile(ten, noiDung, kieu) {

@@ -387,3 +387,24 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
 .cham-tai { width: 7px; height: 7px; border-radius: 50%; background: var(--nhan); animation: nhun 1s ease-in-out infinite; }
 .cham-tai:nth-child(2) { animation-delay: .15s; } .cham-tai:nth-child(3) { animation-delay: .3s; margin-right: 6px; }
 @keyframes nhun { 0%, 100% { transform: translateY(0); opacity: .5; } 40% { transform: translateY(-6px); opacity: 1; } }
+
+/* NHẮC GIỖ */
+.bang-gio { position: absolute; z-index: 4; left: 12px; right: 12px; top: 10px; max-width: 520px; margin: 0 auto;
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 20px; cursor: pointer; background: var(--kinh-dam);
+  animation: tha-xuong-bang var(--sp-bouncy-ms, 600ms) var(--sp-bouncy, ease) both; }
+@keyframes tha-xuong-bang { from { opacity: 0; transform: translateY(-24px) scale(.94); } }
+.bang-gio .nhang { width: 40px; height: 40px; flex: none; border-radius: 14px; background: var(--grad); display: grid; place-items: center; font-size: 20px;
+  box-shadow: 0 6px 14px rgba(229, 56, 59, .3); }
+.bang-gio .chu { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.35; color: var(--chu2); }
+.bang-gio .chu b { color: var(--chu); font-size: 14.5px; }
+.bang-gio .x { border: 0; background: var(--vach); width: 30px; height: 30px; border-radius: 50%; color: var(--chu2); font-size: 17px; flex: none; }
+.thanh-duoi button { position: relative; }
+.cham-do { position: absolute; top: 2px; left: 50%; margin-left: 6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  background: #ff3b30; color: #fff; font: 800 11px/18px 'Be Vietnam Pro', sans-serif; font-style: normal; text-align: center;
+  box-shadow: 0 0 0 2px var(--kinh-dam); animation: bat var(--sp-wobbly-ms, 600ms) var(--sp-wobbly, ease) both; }
+.sap-gio { position: relative; z-index: 1; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, .3); display: grid; gap: 8px; }
+.sap-gio .muc { display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, .16); border-radius: 14px; padding: 8px 10px; cursor: pointer; }
+.sap-gio .muc .dem { flex: none; min-width: 64px; text-align: center; font-weight: 900; font-size: 13px; background: rgba(255, 255, 255, .92); color: #e5383b; border-radius: 10px; padding: 4px 6px; }
+.sap-gio .muc .ct { font-size: 13.5px; line-height: 1.35; }
+.sap-gio .muc .ct b { font-size: 14.5px; }
+.sap-gio .muc .ct small { opacity: .85; }
