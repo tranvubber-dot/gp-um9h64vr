@@ -1071,7 +1071,8 @@
       if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(function (ok) { var e = $('#luuLauDai'); if (e) e.textContent = ok ? 'Có (máy sẽ không tự xoá)' : 'Bình thường'; });
       else $('#luuLauDai').textContent = 'Bình thường';
     } catch (e) {}
-    $('#taiLaiApp').onclick = function () {
+    $('#soPB').textContent = PB || '?';
+    $('#nutCapNhatApp').onclick = $('#taiLaiApp').onclick = function () {
       bao('Đang tải bản mới nhất…');
       var xong = function () { location.reload(); };
       try {

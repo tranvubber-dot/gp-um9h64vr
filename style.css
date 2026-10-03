@@ -597,3 +597,8 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
 .o-sua input, .o-sua textarea { width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--kinh-vien); background: var(--kinh-dam); color: inherit; font: inherit; font-size: 16px; outline: none; resize: vertical; }
 .o-sua input:focus, .o-sua textarea:focus { border-color: var(--nhan2); }
 .nut:disabled { opacity: .6; }
+
+/* Nút cập nhật app ở đầu tab Dòng họ */
+.hang-cap-nhat { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 10px 10px 16px; border-radius: 18px; margin-bottom: 12px; font-size: 14px; color: var(--chu2); }
+.hang-cap-nhat b { color: var(--chu); }
+.hang-cap-nhat .nut { padding: 9px 14px; font-size: 14px; }
