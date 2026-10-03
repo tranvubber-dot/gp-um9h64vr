@@ -246,6 +246,7 @@
     el('rect', { 'class': 'bong2', x: -2, y: 4, width: CW + 4, height: CH + 4, rx: 22 }, vo);
     el('rect', { 'class': 'bong1', x: 0, y: 2.5, width: CW, height: CH + 1, rx: 20 }, vo);
     el('rect', { 'class': 'nen', width: CW, height: CH, rx: 20 }, vo);
+    el('rect', { 'class': 'to-mau', x: 1.5, y: 1.5, width: CW - 3, height: CH - 3, rx: 18.5 }, vo);
     // ảnh tròn / chữ cái đầu trên nền chuyển màu
     var cx = 33, cy = CH / 2, r = 21;
     el('circle', { cx: cx, cy: cy, r: r, fill: p.daMat ? 'url(#gMat)' : (p.gioi === 'nu' ? 'url(#gNu)' : 'url(#gNam)') }, vo);
@@ -256,7 +257,7 @@
       im.setAttribute('href', p.anh);
       el('circle', { cx: cx, cy: cy, r: r, fill: 'none', stroke: 'rgba(255,255,255,.9)', 'stroke-width': 2 }, vo);
     }
-    if (p.daMat) el('circle', { 'class': 'vong-mat', cx: cx, cy: cy, r: r + 3.5 }, vo);
+    el('circle', { 'class': p.daMat ? 'vong-mat' : 'vong-song', cx: cx, cy: cy, r: r + 3.5 }, vo);
     var tx = 63, w = CW - tx - 10;
     chu(vo, tx, 26, p.ten, 'ten', w);
     chu(vo, tx, 43, chuNam(p) || (p.daMat ? '' : 'Còn sống'), 'nam-st');
@@ -887,7 +888,8 @@
       '.noi-vc{stroke:#e0a43a;stroke-width:2}.bong1,.bong2{fill:#6e323c;opacity:.06}.the .nen{fill:#fff;stroke:#f1e8e4}.the.dr .nen{fill:#fffaf6;stroke:#9a90a3;stroke-dasharray:5 4}' +
       '.ten{font-size:14px;font-weight:700;fill:#1e1a22}.nam-st{font-size:11.5px;fill:#6d6475}.chip-bac rect{fill:#f1ecef}.chip-bac text{font-size:10.5px;font-weight:600;fill:#6d6475}' +
       '.the.nam:not(.dr) .chip-bac rect{fill:#e3edfa}.the.nam:not(.dr) .chip-bac text{fill:#2f6fc2}.the.nu:not(.dr) .chip-bac rect{fill:#ffe6ee}.the.nu:not(.dr) .chip-bac text{fill:#d6416c}' +
-      '.chu-cai{fill:#fff;font-size:17px;font-weight:800}.huy-dich rect{fill:url(#gKim)}.huy-dich text{fill:#fff;font-size:10px;font-weight:800}.vong-mat{fill:none;stroke:#e0a43a;stroke-width:1.5;stroke-dasharray:2 2.5}';
+      '.chu-cai{fill:#fff;font-size:17px;font-weight:800}.huy-dich rect{fill:url(#gKim)}.huy-dich text{fill:#fff;font-size:10px;font-weight:800}.vong-mat{fill:none;stroke:#d4a12a;stroke-width:2}.vong-song{fill:none;stroke:#2fb457;stroke-width:2}' +
+      '.the .nen{stroke:#2fb457;stroke-width:2.4}.the.mat .nen{stroke:#d4a12a;stroke-width:2.6}.to-mau{fill:rgba(47,180,87,.07)}.the.mat .to-mau{fill:rgba(212,161,42,.09)}';
     var defs = svg.querySelector('defs').outerHTML;
     var tieuDe = 'Phả đồ ' + (DB.thongTin.ten_dong_ho || 'Họ Trần');
     var s = '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="' + b.x0 + ' ' + (b.y0 - 70) + ' ' + w + ' ' + h + '">' +

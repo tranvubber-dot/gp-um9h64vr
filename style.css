@@ -452,3 +452,29 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
 .la-toi small { display: block; font-size: 12px; font-weight: 700; color: var(--chu2); text-transform: uppercase; letter-spacing: .04em; }
 .la-toi b { font-size: 17px; }
 .la-toi .nut { padding: 8px 14px; font-size: 13.5px; }
+
+/* KHUNG THEO TÌNH TRẠNG: xanh lá = còn sống, vàng kim = đã mất */
+:root { --song: #2fb457; --mat: #d4a12a; --song-nen: rgba(47, 180, 87, .07); --mat-nen: rgba(212, 161, 42, .09); }
+@media (prefers-color-scheme: dark) { :root { --song: #34d860; --mat: #e8bb4a; --song-nen: rgba(52, 216, 96, .08); --mat-nen: rgba(232, 187, 74, .1); } }
+.the .nen { stroke: var(--song); stroke-width: 2.4; }
+.the.mat .nen { stroke: var(--mat); stroke-width: 2.6; }
+.the.dr .nen { stroke-opacity: 1; stroke-width: 2; }
+.the.dr:not(.mat) .nen { stroke: var(--song); }
+.the.dr.mat .nen { stroke: var(--mat); }
+.the .to-mau { fill: var(--song-nen); }
+.the.mat .to-mau { fill: var(--mat-nen); }
+.the .vong-song { fill: none; stroke: var(--song); stroke-width: 2; }
+.the .vong-mat { stroke: var(--mat); stroke-width: 2; stroke-dasharray: none; }
+.the.to-tien .nen { stroke: var(--nhan2); stroke-width: 3; stroke-dasharray: 6 4; }
+.the.chon .nen, .the.toi .nen { stroke: var(--nhan) !important; stroke-width: 3.2 !important; stroke-dasharray: none !important; }
+.cham { box-shadow: 0 0 0 2.5px var(--song), 0 4px 10px rgba(0, 0, 0, .12) !important; }
+.cham.mat { box-shadow: 0 0 0 2.5px var(--mat), 0 4px 10px rgba(0, 0, 0, .12) !important; }
+.ct-dau .cham { border: 3px solid var(--the) !important; box-shadow: 0 0 0 3px var(--song) !important; }
+.ct-dau .cham.mat { box-shadow: 0 0 0 3px var(--mat) !important; }
+.nut-toi .cham { box-shadow: none !important; }
+.o-khung { display: inline-block; width: 13px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; border: 2px solid var(--song); background: var(--song-nen); }
+.o-khung.mat { border-color: var(--mat); background: var(--mat-nen); }
+@media (max-width: 640px) {
+  .chu-giai { display: flex; left: 12px; bottom: calc(var(--duoi) + 10px); padding: 5px 10px; font-size: 11px; gap: 4px 10px; max-width: calc(100% - 140px); }
+  .chu-giai .phu-gd { display: none; }
+}
