@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&text=%E9%99%B3&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.6.2">
+<link rel="stylesheet" href="style.css?v=1.7.0">
 </head>
 <body>
 <div class="nen-loang" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -178,6 +178,19 @@
 <div class="thong-bao" id="thongBao" hidden></div>
 <div class="xem-anh" id="xemAnh" hidden><img alt=""><span class="phu">Chạm để đóng</span></div>
 
+<!-- Màn hình khoá: chỉ ai có link (#k=…) mới xem được -->
+<div class="hoi-toi" id="manKhoa" hidden>
+  <div class="hop-toi kinh">
+    <div>
+      <div class="an-trien lon" aria-hidden="true">陳</div>
+      <h2>Gia phả Họ Trần</h2>
+      <p class="phu"><b>🔒 Chỉ dành cho người trong họ.</b></p>
+      <p class="phu" id="thongBaoKhoa"></p>
+      <form id="formKhoa" class="o-ma"><input id="oKhoa" type="url" placeholder="Dán link gia phả vào đây" autocomplete="off"><button class="nut chinh" type="submit">Mở</button></form>
+    </div>
+  </div>
+</div>
+
 <!-- Hỏi "Bạn là ai?" để tính xưng hô theo từng người xem -->
 <div class="hoi-toi" id="hoiToi" hidden>
   <div class="hop-toi kinh">
@@ -199,11 +212,11 @@
   </div>
 </div>
 
-<script src="config.js?v=1.6.2"></script>
-<script src="data-mau.js?v=1.6.2"></script>
-<script src="amlich.js?v=1.6.2"></script>
-<script src="db.js?v=1.6.2"></script>
-<script src="xungho.js?v=1.6.2"></script>
-<script src="app.js?v=1.6.2"></script>
+<script src="config.js?v=1.7.0"></script>
+<script src="data-mau.js?v=1.7.0"></script>
+<script src="amlich.js?v=1.7.0"></script>
+<script src="db.js?v=1.7.0"></script>
+<script src="xungho.js?v=1.7.0"></script>
+<script src="app.js?v=1.7.0"></script>
 </body>
 </html>

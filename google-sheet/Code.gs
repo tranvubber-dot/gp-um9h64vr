@@ -61,28 +61,47 @@ function docSheet_() {
   return { cong: cong, rieng: rieng, thongTin: thongTin };
 }
 
-/* Web app gọi để lấy cây gia phả (không có phần riêng tư). */
-function doGet() {
-  var d = docSheet_();
-  return json_({ thongTin: d.thongTin, nguoi: d.cong, capNhat: new Date().toISOString() });
+/* ---------- LINK CÓ CHÌA KHOÁ ----------
+   Chỉ ai mở app bằng link có "#k=<chìa khoá>" mới xem được cây gia phả.
+   Chìa khoá lưu trong Thuộc tính tập lệnh LINK_KEY (không nằm trong code trên GitHub).
+   Tạo / đổi chìa khoá: chọn hàm datKhoaLink rồi bấm ▶ Chạy, xem link mới trong Nhật ký. */
+function khoaDung_(k) {
+  var dung = PropertiesService.getScriptProperties().getProperty('LINK_KEY');
+  return !!dung && String(k || '') === dung;
+}
+function chanDo_() { // chặn dò chìa khoá / mã: quá 20 lần sai trong 10 phút thì tạm khoá
+  var cache = CacheService.getScriptCache(), sai = +(cache.get('sai') || 0);
+  return { qua: sai >= 20, tang: function () { cache.put('sai', String(sai + 1), 600); Utilities.sleep(1500); } };
 }
 
-/* Web app gửi { ma } để mở khoá liên lạc. */
+/* Mở thẳng link Apps Script: không trả dữ liệu nữa. */
+function doGet() {
+  return json_({ loi: 'can_link', thongBao: 'Gia phả này chỉ dành cho người trong họ.' });
+}
+
+/* App gửi { k } để lấy cây gia phả; gửi { k, ma } để mở khoá liên lạc. */
 function doPost(e) {
   var body = {};
   try { body = JSON.parse(e.postData.contents); } catch (x) {}
+  var cd = chanDo_();
+  if (cd.qua) return json_({ ok: false, loi: 'Thử sai quá nhiều lần, đợi 10 phút rồi thử lại' });
+  if (!khoaDung_(body.k)) { cd.tang(); return json_({ ok: false, loi: 'can_link' }); }
+
+  if (body.ma == null) { // lấy cây gia phả (không có phần riêng tư)
+    var d = docSheet_();
+    return json_({ ok: true, thongTin: d.thongTin, nguoi: d.cong, capNhat: new Date().toISOString() });
+  }
   var ma = PropertiesService.getScriptProperties().getProperty('MA_GIA_DINH');
   if (!ma) return json_({ ok: false, loi: 'Ban quản trị chưa đặt mã gia đình' });
-
-  // chặn dò mã: quá 20 lần sai trong 10 phút thì tạm khoá
-  var cache = CacheService.getScriptCache(), sai = +(cache.get('sai') || 0);
-  if (sai >= 20) return json_({ ok: false, loi: 'Nhập sai quá nhiều lần, thử lại sau 10 phút' });
-  if (String(body.ma || '').trim() !== String(ma).trim()) {
-    cache.put('sai', String(sai + 1), 600);
-    Utilities.sleep(1500);
-    return json_({ ok: false, loi: 'Sai mã gia đình' });
-  }
+  if (String(body.ma || '').trim() !== String(ma).trim()) { cd.tang(); return json_({ ok: false, loi: 'Sai mã gia đình' }); }
   return json_({ ok: true, lienHe: docSheet_().rieng });
+}
+
+/* Tạo chìa khoá mới (link cũ sẽ hết tác dụng). Link mới hiện trong Nhật ký thực thi. */
+function datKhoaLink() {
+  var k = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '').slice(0, 8);
+  PropertiesService.getScriptProperties().setProperty('LINK_KEY', k);
+  Logger.log('LINK MỚI: https://tranvubber-dot.github.io/gp-um9h64vr/#k=' + k);
 }
 
 /* Chạy thử trong trình soạn Apps Script: chọn hàm này rồi bấm ▶ Chạy, xem Nhật ký. */

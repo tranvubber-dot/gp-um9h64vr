@@ -58,7 +58,10 @@
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 
   /* ---------- Link khôi phục: #kp=<cài đặt mã hoá> (không chứa số điện thoại hay mã gia đình) ---------- */
-  var KHOA_LINK = ['toi', 'cachxem', 'xhCheDo', 'anMau'];
+  var KHOA_LINK = ['toi', 'cachxem', 'xhCheDo', 'anMau', 'khoa'];
+  /* Chìa khoá xem gia phả: lấy từ link "#k=…" (người trong họ gửi cho nhau), lưu lại trên máy. */
+  function layKhoaTuChuoi(s) { var m = String(s || '').match(/[#&?]k=([A-Za-z0-9_-]{16,})/); return m ? m[1] : (/^[A-Za-z0-9_-]{24,}$/.test(String(s || '').trim()) ? String(s).trim() : null); }
+  (function () { var k = layKhoaTuChuoi(location.hash); if (k) { try { localStorage.setItem('gp_khoa', JSON.stringify(k)); } catch (e) {} } })();
   (function () {
     var m = location.hash.match(/[#&]kp=([^&]+)/); if (!m) return;
     try {
@@ -68,7 +71,7 @@
     } catch (e) {}
     try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
   })();
-  window.addEventListener('hashchange', function () { if (/[#&]kp=/.test(location.hash)) location.reload(); });
+  window.addEventListener('hashchange', function () { if (/[#&](kp|k)=/.test(location.hash)) location.reload(); });
   function taoLinkKhoiPhuc() {
     var o = {}; KHOA_LINK.forEach(function (k) { var v = doc(k, null); if (v != null) o[k] = v; });
     var b = btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -140,22 +143,24 @@
       MAU_RIENG = t.rieng;
       return Promise.resolve({ thongTin: window.GP_MAU.thongTin, nguoi: t.cong, capNhat: null });
     }
-    var cu = doc('dulieu', null);
-    var moi = fetch(C.apiUrl + (C.apiUrl.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now())
+    var khoa = doc('khoa', null), cu = khoa ? doc('dulieu', null) : null;
+    if (!khoa) return Promise.reject({ canLink: true });
+    var moi = fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ k: khoa }) })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function (d) {
+        if (d && d.loi === 'can_link') throw { canLink: true };
         if (!d || !d.nguoi) throw new Error(d && d.loi || 'Dữ liệu không đúng dạng');
-        d.taiLuc = Date.now(); ghi('dulieu', d); return d;
+        delete d.ok; d.taiLuc = Date.now(); ghi('dulieu', d); return d;
       });
     if (cu && !epMoi) { // hiện ngay bản đã lưu, cập nhật ngầm
       moi.then(function (d) { if (JSON.stringify(d.nguoi) !== JSON.stringify(cu.nguoi) || JSON.stringify(d.thongTin) !== JSON.stringify(cu.thongTin)) { RAW = d; dungLai(); bao('Đã cập nhật dữ liệu mới'); } })
-        .catch(function () {});
+        .catch(function (e) { if (e && e.canLink) khoaApp(true); });
       return Promise.resolve(cu);
     }
     return moi.catch(function (e) {
+      if (e && e.canLink) throw e;
       if (cu) { bao('Không tải được dữ liệu mới, đang dùng bản đã lưu'); return cu; }
-      bao('Không tải được Google Sheet: ' + e.message + '. Đang hiện dữ liệu mẫu.');
-      LA_MAU = true; return taiDuLieu();
+      throw e;
     });
   }
 
@@ -555,7 +560,13 @@
     $('#zToi').onclick = function () {
       if (TOI && DB.byId[TOI]) canhGiua(TOI, true); else moHoiToi();
     };
-    window.addEventListener('resize', function () { if ($('#tab-phado').classList.contains('hien')) apV(); });
+    var xoayHen = 0;
+    window.addEventListener('resize', function () {
+      if (!$('#tab-phado').classList.contains('hien')) return;
+      apV();
+      clearTimeout(xoayHen); // xoay máy ngang/dọc: canh lại vào thẻ của mình
+      xoayHen = setTimeout(function () { if (TOI && DB && DB.byId[TOI]) canhGiua(TOI); else vuaKhung(true); }, 350);
+    });
   })();
 
   /* =================== CHI TIẾT MỘT NGƯỜI =================== */
@@ -917,7 +928,7 @@
       LH = MAU_RIENG; ghi('lienhe', LH); dungLai(true); bao('Đã mở khoá liên lạc'); return;
     }
     bao('Đang kiểm tra mã…');
-    fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ ma: ma }) })
+    fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ k: doc('khoa', null), ma: ma }) })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d || !d.ok) { bao(d && d.loi || 'Sai mã gia đình'); return; }
@@ -941,12 +952,21 @@
       '<dt>Gia phả lưu lúc</dt><dd>' + (d && d.taiLuc ? new Date(d.taiLuc).toLocaleString('vi-VN') : (LA_MAU ? 'Dữ liệu mẫu' : '—')) + '</dd>' +
       '<dt>Giữ lâu dài</dt><dd id="luuLauDai">Đang kiểm tra…</dd>' +
       '</dl>' +
-      '<div class="hang-nut"><button class="nut chinh" id="layLinkKP">Lấy link khôi phục của tôi</button></div>' +
+      (doc('khoa', null) ? '<div class="hang-nut"><button class="nut chinh" id="guiLinkHo">Gửi link gia phả cho người trong họ</button></div>' : '') +
+      '<div class="hang-nut"><button class="nut" id="layLinkKP">Lấy link khôi phục của tôi</button></div>' +
       '<p class="phu">Lưu link này vào Ghi chú hoặc gửi Zalo cho chính mình. Lỡ xoá app hay đổi điện thoại, mở link là app nhớ lại bạn là ai và cách xem. Link không chứa số điện thoại hay mã gia đình (mã thì nhập lại một lần).</p>';
     try {
       if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(function (ok) { var e = $('#luuLauDai'); if (e) e.textContent = ok ? 'Có (máy sẽ không tự xoá)' : 'Bình thường'; });
       else $('#luuLauDai').textContent = 'Bình thường';
     } catch (e) {}
+    var gl = $('#guiLinkHo');
+    if (gl) gl.onclick = function () {
+      var url = location.origin + location.pathname + '#k=' + doc('khoa', '');
+      var txt = 'Mời bạn xem Gia phả ' + (DB.thongTin.ten_dong_ho || 'họ Trần') + '. Link chỉ dành cho người trong họ, đừng đăng công khai:';
+      if (navigator.share) { navigator.share({ title: 'Gia phả', text: txt, url: url }).catch(function () {}); return; }
+      (navigator.clipboard ? navigator.clipboard.writeText(txt + ' ' + url) : Promise.reject()).then(function () { bao('Đã chép link. Dán vào nhóm Zalo gia đình.'); })
+        .catch(function () { window.prompt('Chép link này:', url); });
+    };
     $('#layLinkKP').onclick = function () {
       var url = taoLinkKhoiPhuc();
       if (navigator.share) { navigator.share({ title: 'Link khôi phục Gia phả', text: 'Link khôi phục app Gia phả của tôi', url: url }).catch(function () {}); return; }
@@ -1047,7 +1067,7 @@
     var nut = document.querySelectorAll('#thanhDuoi button');
     nut.forEach(function (b, i) {
       var la = b.getAttribute('data-tab') === t; b.classList.toggle('chon', la);
-      if (la) $('#chiBao').style.transform = 'translateX(' + (i * 100) + '%)';
+      if (la) $('#chiBao').style.setProperty('--i', i);
     });
     if (t === 'phado' && !G._daVua) { G._daVua = true; requestAnimationFrame(vuaKhung); }
   }
@@ -1059,7 +1079,24 @@
     if (n > 0 && !daTai) { try { sessionStorage.setItem('gp_daTaiLai', '1'); } catch (e) {} location.reload(); return; }
     batDau();
   });
-  function batDau() { taiDuLieu().then(function (d) {
+  /* Màn hình khoá: không có link đúng thì không thấy gì. */
+  function khoaApp(daDoiKhoa) {
+    if (daDoiKhoa) { ghi('dulieu', null); ghi('khoa', null); ghi('lienhe', null); LH = null; }
+    $('#dangTai').hidden = true;
+    $('#manKhoa').hidden = false;
+    $('#thongBaoKhoa').textContent = daDoiKhoa ? 'Link bạn đang dùng đã được ban quản trị đổi. Hãy xin link mới trong nhóm gia đình.' : 'Hãy mở app bằng link được gửi trong nhóm gia đình (Zalo, Facebook…), hoặc dán link vào ô dưới.';
+  }
+  $('#formKhoa').onsubmit = function (e) {
+    e.preventDefault();
+    var k = layKhoaTuChuoi($('#oKhoa').value) || layKhoaTuChuoi('#k=' + $('#oKhoa').value.trim());
+    if (!k) { bao('Link chưa đúng. Hãy dán nguyên link được gửi.'); return; }
+    ghi('khoa', k); bao('Đang mở…'); setTimeout(function () { location.reload(); }, 300);
+  };
+  function batDau() { taiDuLieu().catch(function (e) {
+    if (e && e.canLink) { khoaApp(!!doc('khoa', null)); return new Promise(function () {}); }
+    $('#dangTai').hidden = true; bao('Không tải được gia phả (' + (e && e.message || 'lỗi mạng') + '). Kiểm tra mạng rồi mở lại.');
+    return new Promise(function () {});
+  }).then(function (d) {
     RAW = d; dungLai(); G._daVua = true;
     try { if (sessionStorage.getItem('gp_vuaKhoiPhuc')) { sessionStorage.removeItem('gp_vuaKhoiPhuc'); setTimeout(function () { bao('Đã khôi phục cài đặt của bạn từ link'); }, 600); } } catch (e) {}
     if (!TOI && !doc('boQuaToi', false)) setTimeout(moHoiToi, 500);
