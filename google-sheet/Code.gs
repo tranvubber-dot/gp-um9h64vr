@@ -65,9 +65,9 @@ function docSheet_() {
    Chỉ ai mở app bằng link có "#k=<chìa khoá>" mới xem được cây gia phả.
    Chìa khoá lưu trong Thuộc tính tập lệnh LINK_KEY (không nằm trong code trên GitHub).
    Tạo / đổi chìa khoá: chọn hàm datKhoaLink rồi bấm ▶ Chạy, xem link mới trong Nhật ký. */
-function khoaDung_(k) {
-  var dung = PropertiesService.getScriptProperties().getProperty('LINK_KEY');
-  return !!dung && String(k || '') === dung;
+function khoaDung_(k) { // nhận chìa dài (LINK_KEY) và chìa ngắn (LINK_KEY_NGAN)
+  var p = PropertiesService.getScriptProperties(), k = String(k || '');
+  return [p.getProperty('LINK_KEY'), p.getProperty('LINK_KEY_NGAN')].some(function (d) { return !!d && k === d; });
 }
 function chanDo_() { // chặn dò chìa khoá / mã: quá 20 lần sai trong 10 phút thì tạm khoá
   var cache = CacheService.getScriptCache(), sai = +(cache.get('sai') || 0);
@@ -171,6 +171,14 @@ function datKhoaLink() {
   var k = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '').slice(0, 8);
   PropertiesService.getScriptProperties().setProperty('LINK_KEY', k);
   Logger.log('LINK MỚI: https://tranvubber-dot.github.io/gp-um9h64vr/#k=' + k);
+}
+
+/* Tạo chìa khoá NGẮN (10 ký tự) cho link gọn: …/gp-um9h64vr/#Ab3dE5fG7h. Chìa dài cũ vẫn dùng được. */
+function datKhoaNgan() {
+  var chu = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789', b = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, Utilities.getUuid() + Date.now()), k = '';
+  for (var i = 0; i < 10; i++) k += chu.charAt((b[i] + 256) % chu.length);
+  PropertiesService.getScriptProperties().setProperty('LINK_KEY_NGAN', k);
+  Logger.log('LINK GỌN: https://tranvubber-dot.github.io/gp-um9h64vr/#' + k);
 }
 
 /* Chạy thử trong trình soạn Apps Script: chọn hàm này rồi bấm ▶ Chạy, xem Nhật ký. */

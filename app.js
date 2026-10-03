@@ -60,7 +60,12 @@
   /* ---------- Link khôi phục: #kp=<cài đặt mã hoá> (không chứa số điện thoại hay mã gia đình) ---------- */
   var KHOA_LINK = ['toi', 'cachxem', 'xhCheDo', 'anMau', 'khoa'];
   /* Chìa khoá xem gia phả: lấy từ link "#k=…" (người trong họ gửi cho nhau), lưu lại trên máy. */
-  function layKhoaTuChuoi(s) { var m = String(s || '').match(/[#&?]k=([A-Za-z0-9_-]{16,})/); return m ? m[1] : (/^[A-Za-z0-9_-]{24,}$/.test(String(s || '').trim()) ? String(s).trim() : null); }
+  function layKhoaTuChuoi(s) { // nhận cả link dài "#k=…" lẫn link ngắn "#Ab3dE5fG7h"
+    s = String(s || '').trim();
+    var m = s.match(/[#&?]k=([A-Za-z0-9_-]{8,})/) || s.match(/#([A-Za-z0-9]{8,16})$/);
+    return m ? m[1] : (/^[A-Za-z0-9_-]{24,}$/.test(s) ? s : null);
+  }
+  function linkChiaSe(k) { return location.origin + location.pathname + (/^[A-Za-z0-9]{8,16}$/.test(k) ? '#' : '#k=') + k; }
   (function () { var k = layKhoaTuChuoi(location.hash); if (k) { try { localStorage.setItem('gp_khoa', JSON.stringify(k)); } catch (e) {} } })();
   (function () {
     var m = location.hash.match(/[#&]kp=([^&]+)/); if (!m) return;
@@ -71,7 +76,7 @@
     } catch (e) {}
     try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
   })();
-  window.addEventListener('hashchange', function () { if (/[#&](kp|k)=/.test(location.hash)) location.reload(); });
+  window.addEventListener('hashchange', function () { if (/[#&](kp|k)=/.test(location.hash) || /^#[A-Za-z0-9]{8,16}$/.test(location.hash)) location.reload(); });
   function taoLinkKhoiPhuc() {
     var o = {}; KHOA_LINK.forEach(function (k) { var v = doc(k, null); if (v != null) o[k] = v; });
     var b = btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -1083,7 +1088,7 @@
     };
     var gl = $('#guiLinkHo');
     if (gl) gl.onclick = function () {
-      var url = location.origin + location.pathname + '#k=' + doc('khoa', '');
+      var url = linkChiaSe(doc('khoa', ''));
       var txt = 'Mời bạn xem Gia phả ' + (DB.thongTin.ten_dong_ho || 'họ Trần') + '. Link chỉ dành cho người trong họ, đừng đăng công khai:';
       if (navigator.share) { navigator.share({ title: 'Gia phả', text: txt, url: url }).catch(function () {}); return; }
       (navigator.clipboard ? navigator.clipboard.writeText(txt + ' ' + url) : Promise.reject()).then(function () { bao('Đã chép link. Dán vào nhóm Zalo gia đình.'); })
