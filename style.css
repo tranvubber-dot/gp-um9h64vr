@@ -408,3 +408,20 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
 .sap-gio .muc .ct { font-size: 13.5px; line-height: 1.35; }
 .sap-gio .muc .ct b { font-size: 14.5px; }
 .sap-gio .muc .ct small { opacity: .85; }
+
+/* ẢNH ĐẠI DIỆN + TIỂU SỬ */
+.cham { position: relative; overflow: hidden; }
+.cham img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.anh-lon { position: relative; margin: 6px -6px 12px; border-radius: 24px; overflow: hidden; aspect-ratio: 4 / 3; max-height: 46vh; cursor: zoom-in;
+  background: var(--vach); box-shadow: var(--kinh-bong); animation: noi-len var(--sp-soft-ms, 450ms) var(--sp-soft, ease) both; }
+.anh-lon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.anh-lon .phong { position: absolute; right: 10px; bottom: 10px; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(0, 0, 0, .45); color: #fff; font-size: 16px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.anh-lon + .ct-dau { margin-top: 0; }
+.tieu-su-khoi { background: var(--kinh); border: 1px solid var(--kinh-vien); border-radius: 20px; padding: 12px 14px 6px; }
+.tieu-su-khoi h4 { margin-bottom: 4px; }
+.tieu-su p { margin: 0 0 10px; line-height: 1.7; font-size: 15px; }
+.tieu-su p:first-child::first-letter { font-size: 2.1em; font-weight: 900; float: left; line-height: .9; margin: 4px 6px 0 0; color: var(--nhan); }
+.xem-anh { position: fixed; inset: 0; z-index: 40; background: rgba(10, 6, 12, .92); display: grid; place-items: center; padding: 20px; cursor: zoom-out; animation: hien .2s ease both; }
+.xem-anh img { max-width: 100%; max-height: 82vh; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0, 0, .5); animation: bat var(--sp-bouncy-ms, 500ms) var(--sp-bouncy, ease) both; }
+.xem-anh .phu { position: absolute; bottom: calc(24px + env(safe-area-inset-bottom)); color: rgba(255, 255, 255, .7); }

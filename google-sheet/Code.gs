@@ -101,7 +101,7 @@ function thuDoc() {
    - Tab cũ được giữ lại tên "Người (bản cũ)" để đối chiếu, xem xong có thể xoá.
    ===================================================================== */
 var COT_MOI = [
-  // [tiêu đề, khoá, ghi chú, độ rộng, nhóm]  nhóm: 'chinh' | 'rieng' | 'them'
+  // [tiêu đề, khoá, ghi chú, độ rộng, nhóm]  nhóm: 'chinh' | 'ke' (ảnh, tiểu sử) | 'rieng' | 'them'
   ['Mã', 'ma', 'Tự điền khi gõ tên. Không cần sửa.', 58, 'chinh'],
   ['Họ và tên', 'ho_ten', 'Gõ họ tên đầy đủ. Mã và giới tính sẽ tự điền.', 190, 'chinh'],
   ['Giới tính', 'gioi_tinh', 'Nam / Nữ (tự đoán theo chữ "Thị", sửa lại nếu sai)', 82, 'chinh'],
@@ -112,6 +112,8 @@ var COT_MOI = [
   ['Ngày sinh', 'ngay_sinh', 'Ghi năm (1958) hoặc ngày/tháng/năm (12/5/1958).', 92, 'chinh'],
   ['Ngày mất', 'ngay_mat', 'Để trống nếu còn sống.', 92, 'chinh'],
   ['Ngày giỗ', 'ngay_gio', 'Ngày/tháng ÂM LỊCH, ví dụ 12/3.', 82, 'chinh'],
+  ['Ảnh', 'anh', 'Ảnh đại diện (không bắt buộc). Tải ảnh lên Google Drive → bấm Chia sẻ → "Bất kỳ ai có đường liên kết" → Sao chép đường liên kết → dán vào đây.', 150, 'ke'],
+  ['Tiểu sử', 'tieu_su', 'Ai muốn thì viết: cuộc đời, công đức, kỷ niệm, lời dặn… Xuống dòng trong ô: Ctrl+Enter (Windows) hoặc ⌘+Enter (Mac). App hiện đầy đủ khi bấm vào người đó.', 320, 'ke'],
   ['Điện thoại', 'dien_thoai', '🔒 Riêng tư — chỉ người có mã gia đình mới thấy.', 118, 'rieng'],
   ['Zalo', 'zalo', '🔒 Số điện thoại dùng Zalo.', 110, 'rieng'],
   ['Facebook', 'facebook', '🔒 Link trang Facebook.', 150, 'rieng'],
@@ -127,11 +129,10 @@ var COT_MOI = [
   ['Cải táng', 'cai_tang', 'Nơi và năm cải táng (sang cát) nếu có.', 130, 'them'],
   ['Bản đồ mộ', 'ban_do_mo', 'Dán link Google Maps vị trí mộ.', 130, 'them'],
   ['Học vị, chức danh', 'chuc_danh', '', 140, 'them'],
-  ['Quê quán', 'que_quan', 'Với dâu/rể: quê của họ.', 130, 'them'],
-  ['Tiểu sử', 'tieu_su', 'Tiểu sử, công đức, lời kể.', 280, 'them'],
-  ['Ảnh', 'anh', 'Link ảnh Google Drive (chia sẻ "bất kỳ ai có đường liên kết").', 130, 'them']
+  ['Quê quán', 'que_quan', 'Với dâu/rể: quê của họ.', 130, 'them']
 ];
-var MAU_NHOM = { chinh: '#E5383B', rieng: '#6E56CF', them: '#8E8A94' };
+var MAU_NHOM = { chinh: '#E5383B', ke: '#F08C2E', rieng: '#6E56CF', them: '#8E8A94' };
+function cotSo_(khoa) { for (var i = 0; i < COT_MOI.length; i++) if (COT_MOI[i][1] === khoa) return i + 1; return 0; }
 var SO_DONG = 1000;
 
 function maTu_(x) {
@@ -212,7 +213,9 @@ function lamGonSheet() {
   sh.getRange(2, 2, SO_DONG - 1, 1).setFontWeight('bold');
   sh.getRange(2, 1, SO_DONG - 1, n).setVerticalAlignment('middle').setWrap(false);
   sh.getRange(2, 1, SO_DONG - 1, n).applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY, false, false);
-  sh.getRange(2, 11, SO_DONG - 1, 4).setBackground('#F4F0FF'); // vùng liên lạc riêng tư
+  sh.getRange(2, cotSo_('dien_thoai'), SO_DONG - 1, 4).setBackground('#F4F0FF'); // vùng liên lạc riêng tư
+  sh.getRange(2, cotSo_('anh'), SO_DONG - 1, 2).setBackground('#FFF6EC'); // ảnh + tiểu sử
+  sh.getRange(2, cotSo_('tieu_su'), SO_DONG - 1, 1).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
 
   // 5. danh sách chọn người (tab ẩn _DS, tự cập nhật khi thêm người)
   var ds = ss.getSheetByName('_DS') || ss.insertSheet('_DS');
@@ -222,16 +225,16 @@ function lamGonSheet() {
   ds.hideSheet();
   var chonNguoi = SpreadsheetApp.newDataValidation().requireValueInRange(ds.getRange('A2:A'), true)
     .setAllowInvalid(true).setHelpText('Chọn người trong danh sách, gõ vài chữ của tên để tìm nhanh.').build();
-  sh.getRange(2, 4, SO_DONG - 1, 3).setDataValidation(chonNguoi);
+  sh.getRange(2, cotSo_('ma_cha'), SO_DONG - 1, 3).setDataValidation(chonNguoi);
   var gioi = SpreadsheetApp.newDataValidation().requireValueInList(['Nam', 'Nữ'], true).setAllowInvalid(false).build();
-  sh.getRange(2, 3, SO_DONG - 1, 1).setDataValidation(gioi);
+  sh.getRange(2, cotSo_('gioi_tinh'), SO_DONG - 1, 1).setDataValidation(gioi);
   var vai = SpreadsheetApp.newDataValidation().requireValueInList(['Chính thất', 'Kế thất', 'Thứ thất'], true).setAllowInvalid(true).build();
-  sh.getRange(2, 15, SO_DONG - 1, 1).setDataValidation(vai);
+  sh.getRange(2, cotSo_('vai'), SO_DONG - 1, 1).setDataValidation(vai);
   var loai = SpreadsheetApp.newDataValidation().requireValueInList(['Con nuôi', 'Thừa tự'], true).setAllowInvalid(true).build();
-  sh.getRange(2, 16, SO_DONG - 1, 1).setDataValidation(loai);
+  sh.getRange(2, cotSo_('loai_con'), SO_DONG - 1, 1).setDataValidation(loai);
 
   // 6. gom cột ít dùng sau nút [+]
-  var batDau = 15, soThem = n - batDau + 1;
+  var batDau = cotSo_('vai'), soThem = n - batDau + 1;
   sh.setColumnGroupControlPosition(SpreadsheetApp.GroupControlTogglePosition.BEFORE);
   sh.getRange(1, batDau, 1, soThem).shiftColumnGroupDepth(1);
   sh.getColumnGroup(batDau, 1).collapse();
