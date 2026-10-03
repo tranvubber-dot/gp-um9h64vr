@@ -104,6 +104,7 @@
   })();
 
   var CD = Object.assign({ truyenThong: false, traiTruocGaiSau: false, hienNgoaiTon: C.hienNgoaiTon !== false }, doc('cachxem', {}));
+  var PB = ((document.currentScript && document.currentScript.src || '').match(/v=([\d.]+)/) || [])[1];
   var RAW = null;          // dữ liệu công khai (đã bỏ phần riêng tư)
   var LH = doc('lienhe', null); // phần riêng tư đã mở khoá: { ma: {dien_thoai, zalo, facebook, noi_o, ngay_sinh} }
   var LA_MAU = !C.apiUrl;
@@ -1060,7 +1061,9 @@
       '<dt>Liên lạc</dt><dd>' + (LH ? 'Đã mở khoá' : 'Chưa mở khoá') + '</dd>' +
       '<dt>Gia phả lưu lúc</dt><dd>' + (d && d.taiLuc ? new Date(d.taiLuc).toLocaleString('vi-VN') : (LA_MAU ? 'Dữ liệu mẫu' : '—')) + '</dd>' +
       '<dt>Giữ lâu dài</dt><dd id="luuLauDai">Đang kiểm tra…</dd>' +
+      '<dt>Phiên bản app</dt><dd>' + esc(PB || '?') + '</dd>' +
       '</dl>' +
+      '<div class="hang-nut"><button class="nut" id="taiLaiApp">↻ Tải lại app và dữ liệu mới nhất</button></div>' +
       (doc('khoa', null) ? '<div class="hang-nut"><button class="nut chinh" id="guiLinkHo">Gửi link gia phả cho người trong họ</button></div>' : '') +
       '<div class="hang-nut"><button class="nut" id="layLinkKP">Lấy link khôi phục của tôi</button></div>' +
       '<p class="phu">Lưu link này vào Ghi chú hoặc gửi Zalo cho chính mình. Lỡ xoá app hay đổi điện thoại, mở link là app nhớ lại bạn là ai và cách xem. Link không chứa số điện thoại hay mã gia đình (mã thì nhập lại một lần).</p>';
@@ -1068,6 +1071,15 @@
       if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(function (ok) { var e = $('#luuLauDai'); if (e) e.textContent = ok ? 'Có (máy sẽ không tự xoá)' : 'Bình thường'; });
       else $('#luuLauDai').textContent = 'Bình thường';
     } catch (e) {}
+    $('#taiLaiApp').onclick = function () {
+      bao('Đang tải bản mới nhất…');
+      var xong = function () { location.reload(); };
+      try {
+        (navigator.serviceWorker ? navigator.serviceWorker.getRegistration().then(function (r) { return r && r.update(); }) : Promise.resolve())
+          .then(function () { return window.caches ? caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }) : 0; })
+          .then(function () { ghi('dulieu', null); }).then(xong, xong);
+      } catch (e) { xong(); }
+    };
     var gl = $('#guiLinkHo');
     if (gl) gl.onclick = function () {
       var url = location.origin + location.pathname + '#k=' + doc('khoa', '');
@@ -1213,7 +1225,7 @@
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(function () {});
 
   /* App trên màn hình chính iPhone không tải lại khi mở lên: tự kiểm tra bản mới + dữ liệu mới mỗi lần quay lại app. */
-  var AN_LUC = 0, PB = (([].slice.call(document.scripts).map(function (x) { return x.src; }).filter(function (x) { return /app\.js\?v=/.test(x); })[0] || '').match(/v=([\d.]+)/) || [])[1];
+  var AN_LUC = 0;
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) { AN_LUC = Date.now(); return; }
     if (!AN_LUC || Date.now() - AN_LUC < 20000 || LA_MAU || !RAW) return;
