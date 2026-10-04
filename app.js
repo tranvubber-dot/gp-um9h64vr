@@ -341,17 +341,27 @@
     var vo = el('g', { 'class': 'vo' }, g);
     if (laCuTo(p)) { // ảnh thờ trong khung vàng, dựng tách phía trên thẻ
       var fx = (CW - KHUNG_W) / 2, fy = -KHUNG_H - KHUNG_CACH, wx = fx + KHUNG_W * 0.223, wy = fy + KHUNG_H * 0.157, ww = KHUNG_W * 0.546, wh = KHUNG_H * 0.688;
-      var hq = el('g', { 'class': 'hao-to', transform: 'translate(' + (fx + KHUNG_W / 2) + ' ' + (fy + KHUNG_H / 2) + ')' }, vo); // hào quang chói lọi
-      el('ellipse', { 'class': 'quang-to', rx: KHUNG_W * 0.9, ry: KHUNG_H * 0.75, fill: 'url(#gHaoTo)' }, hq); // vầng sáng hổ phách, thở chậm
+      var hq = el('g', { 'class': 'hao-to', transform: 'translate(' + (fx + KHUNG_W / 2) + ' ' + (fy + KHUNG_H / 2) + ')' }, vo); // hào quang toả sáng
+      el('ellipse', { 'class': 'song-sang', rx: KHUNG_W * 0.75, ry: KHUNG_H * 0.66, fill: 'url(#gHaoTo)' }, hq);
+      el('ellipse', { 'class': 'song-sang tre', rx: KHUNG_W * 0.75, ry: KHUNG_H * 0.66, fill: 'url(#gHaoTo)' }, hq);
+      el('ellipse', { 'class': 'quang-to', rx: KHUNG_W * 0.95, ry: KHUNG_H * 0.8, fill: 'url(#gHaoTo)' }, hq);
+      for (var bi = 0; bi < 7; bi++) { // bụi vàng bay lên
+        el('circle', { 'class': 'bui-vang', cx: (-KHUNG_W * 0.45 + bi * KHUNG_W * 0.15).toFixed(1), cy: (KHUNG_H * 0.42).toFixed(1), r: (1.2 + (bi % 3) * 0.6).toFixed(1),
+          style: 'animation-delay:' + (bi * 0.7).toFixed(1) + 's;animation-duration:' + (4 + (bi % 3)) + 's' }, hq);
+      }
       var kt = el('g', { 'class': 'khung-to' }, vo);
       var cp = el('clipPath', { id: 'cKhungTo-' + p.id }, kt); el('rect', { x: wx, y: wy, width: ww, height: wh }, cp);
-      el('rect', { x: wx, y: wy, width: ww, height: wh, fill: p.gioi === 'nu' ? 'url(#gNu)' : 'url(#gNam)' }, kt);
-      var cc = chu(kt, wx + ww / 2, wy + wh / 2 + 12, tenGoi(p).charAt(0).toUpperCase(), 'chu-cai'); cc.setAttribute('text-anchor', 'middle'); cc.style.fontSize = '34px';
+      el('rect', { x: wx, y: wy, width: ww, height: wh, fill: 'url(#gSonMai)' }, kt);
+      var cc = chu(kt, wx + ww / 2, wy + wh / 2 + 13, tenGoi(p).charAt(0).toUpperCase(), 'chu-to'); cc.setAttribute('text-anchor', 'middle');
       if (p.anh) {
         var ia = el('image', { x: wx, y: wy, width: ww, height: wh, 'clip-path': 'url(#cKhungTo-' + p.id + ')', preserveAspectRatio: 'xMidYMid slice' }, kt);
         ia.addEventListener('error', function () { thuLaiAnh(ia, function () { ia.remove(); }); }); ia.setAttribute('href', p.anh);
       }
       el('image', { x: fx, y: fy, width: KHUNG_W, height: KHUNG_H, href: 'nen/khung-to.webp' }, kt);
+      var mk = el('mask', { id: 'mKhung-' + p.id, maskUnits: 'userSpaceOnUse', x: fx, y: fy, width: KHUNG_W, height: KHUNG_H }, kt);
+      el('image', { x: fx, y: fy, width: KHUNG_W, height: KHUNG_H, href: 'nen/khung-to.webp' }, mk);
+      var vs = el('g', { mask: 'url(#mKhung-' + p.id + ')' }, kt);
+      el('rect', { 'class': 'vet-sang', x: fx - KHUNG_W * 0.6, y: fy - 10, width: KHUNG_W * 0.45, height: KHUNG_H + 20, fill: 'url(#gVetSang)', transform: 'skewX(-20)' }, vs);
     }
     // bóng mềm giả (2 lớp, không dùng filter để kéo thả mượt)
     el('rect', { 'class': 'bong2', x: -2, y: 4, width: CW + 4, height: CH + 4, rx: 22 }, vo);
