@@ -343,14 +343,7 @@
     if (laCuTo(p)) { // ảnh thờ trong khung vàng, dựng tách phía trên thẻ
       var fx = (CW - KHUNG_W) / 2, fy = -KHUNG_H - KHUNG_CACH, wx = fx + KHUNG_W * 0.223, wy = fy + KHUNG_H * 0.157, ww = KHUNG_W * 0.546, wh = KHUNG_H * 0.688;
       var hq = el('g', { 'class': 'hao-to', transform: 'translate(' + (fx + KHUNG_W / 2) + ' ' + (fy + KHUNG_H / 2) + ')' }, vo); // hào quang chói lọi
-      var tia = el('g', { 'class': 'tia-xoay', mask: 'url(#mTia)' }, hq), tiaD = '';
-      for (var ti = 0; ti < 18; ti++) { var ga = ti * Math.PI / 9, gw = 0.075; tiaD += 'M0,0L' + (165 * Math.cos(ga - gw)).toFixed(1) + ',' + (165 * Math.sin(ga - gw)).toFixed(1) + 'L' + (165 * Math.cos(ga + gw)).toFixed(1) + ',' + (165 * Math.sin(ga + gw)).toFixed(1) + 'Z'; }
-      el('path', { d: tiaD, fill: '#ffd56a' }, tia);
-      el('ellipse', { 'class': 'quang-to', rx: KHUNG_W * 0.95, ry: KHUNG_H * 0.82, fill: 'url(#gHaoTo)' }, hq);
-      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (q, qi) {
-        el('path', { 'class': 'lap-lanh', d: 'M0,-9L2,-2L9,0L2,2L0,9L-2,2L-9,0L-2,-2Z', fill: '#fffbe6',
-          transform: 'translate(' + (q[0] * KHUNG_W * 0.5) + ' ' + (q[1] * KHUNG_H * 0.5) + ')', style: 'animation-delay:' + (qi * 0.55) + 's' }, hq);
-      });
+      el('ellipse', { 'class': 'quang-to', rx: KHUNG_W * 0.9, ry: KHUNG_H * 0.75, fill: 'url(#gHaoTo)' }, hq); // vầng sáng hổ phách, thở chậm
       var kt = el('g', { 'class': 'khung-to' }, vo);
       var cp = el('clipPath', { id: 'cKhungTo-' + p.id }, kt); el('rect', { x: wx, y: wy, width: ww, height: wh }, cp);
       el('rect', { x: wx, y: wy, width: ww, height: wh, fill: p.gioi === 'nu' ? 'url(#gNu)' : 'url(#gNam)' }, kt);

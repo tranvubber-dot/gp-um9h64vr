@@ -709,16 +709,16 @@ html[data-nen="rongphuong"] .noi, html[data-nen="sonmai"] .noi { stroke: #f0b84a
 #oMat { animation: noi-len .35s ease both; }
 /* Thẻ "Bạn": viền vàng kim + hào quang toả sáng */
 .the.toi .nen { stroke: url(#gVienVang) !important; stroke-width: 3.6 !important; stroke-dasharray: none !important; }
-.hao-quang { fill: #f5c04a; opacity: .55; animation: hao-quang 2.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-@keyframes hao-quang { 0%, 100% { opacity: .5; transform: scale(.99); } 50% { opacity: .95; transform: scale(1.06); } }
+.hao-quang { fill: #f0b25a; opacity: .4; animation: hao-quang 5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes hao-quang { 0%, 100% { opacity: .28; transform: scale(.99); } 50% { opacity: .55; transform: scale(1.02); } }
 @media (prefers-reduced-motion: reduce) { .hao-quang { animation: none; } }
 .the.chon:not(.toi) .nen { stroke: var(--nhan) !important; }
 /* Hào quang khung cụ Tổ */
 .hao-to { pointer-events: none; }
 .tia-xoay { opacity: .55; animation: tia-xoay 30s linear infinite; }
 @keyframes tia-xoay { to { transform: rotate(360deg); } }
-.quang-to { animation: quang-to 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-@keyframes quang-to { 0%, 100% { opacity: .65; transform: scale(.96); } 50% { opacity: 1; transform: scale(1.08); } }
+.quang-to { animation: quang-to 6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes quang-to { 0%, 100% { opacity: .7; transform: scale(.97); } 50% { opacity: 1; transform: scale(1.04); } }
 .lap-lanh { transform-box: fill-box; transform-origin: center; animation: lap-lanh 2.2s ease-in-out infinite; opacity: 0; }
 @keyframes lap-lanh { 0%, 100% { opacity: 0; scale: .3; } 45% { opacity: 1; scale: 1.15; } 60% { opacity: .9; scale: .9; } }
 @media (prefers-reduced-motion: reduce) { .tia-xoay, .quang-to, .lap-lanh { animation: none; } .lap-lanh { opacity: .8; } }
