@@ -1434,8 +1434,8 @@
   }
   function urlSvg(x) { return 'url("data:image/svg+xml;charset=utf-8,' + encodeURIComponent(x) + '")'; }
   var NEN = {
-    rongphuong: function () { return { img: 'url("nen/phuong.webp"), url("nen/rong.webp")', size: 'min(64vmin, 440px) auto, min(84vmin, 600px) auto', lap: 'no-repeat, no-repeat',
-      vt: 'right -7vmin top 15vh, left -12vmin bottom calc(var(--duoi) + 3vh)', mau: 'url("nen/rong.webp")' }; },
+    rongphuong: function () { return { img: 'url("nen/phuong.webp"), url("nen/rong.webp")', size: 'min(56vw, 46vh, 460px) auto, min(80vw, 42vh, 560px) auto', lap: 'no-repeat, no-repeat',
+      vt: 'right 3vw top calc(env(safe-area-inset-top) + 120px), left 3vw bottom calc(var(--duoi) + 70px)', mau: 'url("nen/rong.webp")' }; },
     luonglong: function () { return { img: 'url("nen/luong-long.webp")', size: 'cover', lap: 'no-repeat', vt: 'center', mau: 'url("nen/luong-long.webp")' }; },
     trongdong: function () { return { img: urlSvg(svgTrongDong('#c8913a')), size: 'min(120vmin, 900px)', lap: 'no-repeat', vt: 'center 58%' }; },
     sonmai: function () { return { img: urlSvg(svgMay('#d9a441')), size: '130px 110px', lap: 'repeat', vt: '0 0' }; },
