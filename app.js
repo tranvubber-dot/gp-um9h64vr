@@ -442,7 +442,12 @@
         kids.forEach(function (c) { dat(c, cx); xs.push(c._x + CW / 2); cx += c._w + HG; });
         var dich = p.dich && kids.some(function (c) { return c.dich; });
         kids.forEach(function (c, i) { // đường cong mềm từ cha mẹ xuống từng con
-          var ty = c._y, d = 'M' + ox + ',' + (oy + 2) + 'C' + ox + ',' + (ym + 10) + ' ' + xs[i] + ',' + (ym - 10) + ' ' + xs[i] + ',' + ty;
+          var ty = c._y, d;
+          if (CD.nhanhVuong) { // nhánh vuông: xuống – ngang – xuống, góc bo tròn nhẹ
+            var x1 = ox, x2 = xs[i], rr = Math.min(10, Math.abs(x2 - x1) / 2, (ty - ym) / 2), sx = x2 > x1 ? 1 : -1;
+            d = Math.abs(x2 - x1) < 1 ? 'M' + x1 + ',' + (oy + 2) + 'V' + ty
+              : 'M' + x1 + ',' + (oy + 2) + 'V' + (ym - rr) + 'Q' + x1 + ',' + ym + ' ' + (x1 + sx * rr) + ',' + ym + 'H' + (x2 - sx * rr) + 'Q' + x2 + ',' + ym + ' ' + x2 + ',' + (ym + rr) + 'V' + ty;
+          } else d = 'M' + ox + ',' + (oy + 2) + 'C' + ox + ',' + (ym + 10) + ' ' + xs[i] + ',' + (ym - 10) + ' ' + xs[i] + ',' + ty;
           var lop = c.dich && dich ? lopDich : lopNoi; // dây vàng nổi: bóng tối + thân vàng + ánh sáng
           el('path', { 'class': 'noi-bong', d: d }, lop);
           el('path', { 'class': 'noi' + (c.dich && dich ? ' dich' : ''), d: d }, lop);
@@ -1248,6 +1253,7 @@
       $('#khoiKhoa').parentNode.insertAdjacentElement('afterend', k);
     }
     k.innerHTML = '<h2>Cách xem phả đồ</h2>' +
+      '<div class="kieu-nhanh"><span>Kiểu nhánh nối</span><div class="chon-dn"><button type="button" data-nhanh="0"' + (CD.nhanhVuong ? '' : ' class="chon"') + '>〰 Cong mềm</button><button type="button" data-nhanh="1"' + (CD.nhanhVuong ? ' class="chon"' : '') + '>⊓ Vuông góc</button></div></div>' +
       '<label><span>Kiểu truyền thống<br><span class="phu">Phả đồ chỉ vẽ con trai, con gái ghi trong thẻ của cha</span></span><input class="cong-tac" type="checkbox" id="cdTT"' + (CD.truyenThong ? ' checked' : '') + '></label>' +
       '<label><span>Hiện cháu ngoại<br><span class="phu">Con của con gái, 1 đời</span></span><input class="cong-tac" type="checkbox" id="cdNT"' + (CD.hienNgoaiTon ? ' checked' : '') + (CD.truyenThong ? ' disabled' : '') + '></label>' +
       '<label><span>Con trai trước, con gái sau<br><span class="phu">Theo tục cũ. Tắt thì xếp theo thứ tự sinh</span></span><input class="cong-tac" type="checkbox" id="cdTr"' + (CD.traiTruocGaiSau ? ' checked' : '') + '></label>' +
@@ -1256,6 +1262,12 @@
     $('#cdTT').onchange = function () { doi('truyenThong', this.checked); };
     $('#cdNT').onchange = function () { doi('hienNgoaiTon', this.checked); };
     $('#cdTr').onchange = function () { doi('traiTruocGaiSau', this.checked); };
+    k.querySelectorAll('[data-nhanh]').forEach(function (b) {
+      b.onclick = function () {
+        k.querySelectorAll('[data-nhanh]').forEach(function (x) { x.classList.toggle('chon', x === b); });
+        CD.nhanhVuong = b.getAttribute('data-nhanh') === '1'; ghi('cachxem', CD); veCay(true); bao(CD.nhanhVuong ? 'Đã đổi sang nhánh vuông' : 'Đã đổi sang nhánh cong');
+      };
+    });
   }
 
   /* tải sơ đồ SVG để in */
