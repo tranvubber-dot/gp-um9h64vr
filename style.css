@@ -895,5 +895,8 @@ html[data-nen="luonglong"] { --chu-vang: #8a5a0c; --chu-vang2: #a8761c; }
 .goc-dich { fill: none; stroke: #f2b84b; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 2px rgba(242, 184, 75, .6)); }
 .ios .goc-dich { filter: none; }
 .huy.ga { background: linear-gradient(135deg, #a3241a, #e5383b); color: #ffe7a8; }
-.o-mau.dich { background: transparent; border: 1.5px solid #e5383b; box-shadow: 0 0 0 1.5px var(--nen), 0 0 0 3px #f2b84b; border-radius: 3px; }
+.o-mau.dich { background: transparent; border: 3px double #e0a43a; border-radius: 2px; width: 12px; height: 12px; }
 @media (max-width: 640px) { .chu-giai { flex-wrap: wrap; max-width: calc(100% - 178px); row-gap: 3px; } }
+
+.khung-dich { pointer-events: none; filter: drop-shadow(0 2px 4px rgba(60, 30, 0, .45)); }
+.ios .khung-dich { filter: none; }

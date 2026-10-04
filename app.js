@@ -367,10 +367,11 @@
       el('rect', { 'class': 'vet-sang', x: fx - KHUNG_W * 0.6, y: fy - 10, width: KHUNG_W * 0.45, height: KHUNG_H + 20, fill: 'url(#gVetSang)', transform: 'skewX(-20)' }, vs);
     }
     // bóng mềm giả (2 lớp, không dùng filter để kéo thả mượt)
-    el('rect', { 'class': 'bong2', x: -2, y: 4, width: CW + 4, height: CH + 4, rx: 22 }, vo);
-    el('rect', { 'class': 'bong1', x: 0, y: 2.5, width: CW, height: CH + 1, rx: 20 }, vo);
-    el('rect', { 'class': 'nen', width: CW, height: CH, rx: 20 }, vo);
-    el('rect', { 'class': 'to-mau', x: 1.5, y: 1.5, width: CW - 3, height: CH - 3, rx: 18.5 }, vo);
+    var rxT = p.dich ? 6 : 20; // dòng đích: góc vuông nhẹ để vừa khung hoa văn
+    el('rect', { 'class': 'bong2', x: -2, y: 4, width: CW + 4, height: CH + 4, rx: rxT + 2 }, vo);
+    el('rect', { 'class': 'bong1', x: 0, y: 2.5, width: CW, height: CH + 1, rx: rxT }, vo);
+    el('rect', { 'class': 'nen', width: CW, height: CH, rx: rxT }, vo);
+    el('rect', { 'class': 'to-mau', x: 1.5, y: 1.5, width: CW - 3, height: CH - 3, rx: rxT - 1.5 }, vo);
     // ảnh tròn / chữ cái đầu trên nền chuyển màu
     var cx = 33, cy = CH / 2, r = 21, coAvatar = !(p.daMat || laCuTo(p)); // người đã mất, cụ Tổ: thẻ trang trọng, không ảnh (bấm vào mới xem)
     if (coAvatar) {
@@ -404,15 +405,7 @@
       var tc = chu(cb, giua ? tx : tx + 6, 63, bac, '', bw - 12 < doDai(bac, '600 10.5px "Be Vietnam Pro", sans-serif') ? bw - 12 : 0);
       if (giua) tc.setAttribute('text-anchor', 'middle');
     }
-    if (p.dich) { // dòng đích: khung riêng — viền đôi đỏ son + bốn góc chạm vàng (không dùng nhãn sao)
-      var kd = el('g', { 'class': 'khung-dich' }, vo), o = 5, X0 = -o, Y0 = -o, X1 = CW + o, Y1 = CH + o, L = 13;
-      el('rect', { 'class': 'vien-dich', x: X0, y: Y0, width: CW + 2 * o, height: CH + 2 * o, rx: 24 }, kd);
-      [[X0, Y0, 1, 1], [X1, Y0, -1, 1], [X0, Y1, 1, -1], [X1, Y1, -1, -1]].forEach(function (c) {
-        var x = c[0], y = c[1], sx = c[2], sy = c[3];
-        el('path', { 'class': 'goc-dich', d: 'M' + x + ',' + (y + sy * L) + 'V' + (y + sy * 5) + 'Q' + x + ',' + y + ' ' + (x + sx * 5) + ',' + y + 'H' + (x + sx * L) +
-          'M' + (x + sx * 3) + ',' + (y + sy * 3) + 'l' + (sx * 3.2) + ',' + (sy * 3.2) }, kd);
-      });
-    }
+    if (p.dich) el('image', { 'class': 'khung-dich', x: -6, y: -6, width: CW + 12, height: CH + 12, href: 'nen/khung-dich.webp', preserveAspectRatio: 'none' }, vo); // dòng đích: khung vàng chạm hoa văn
     return g;
   }
 
