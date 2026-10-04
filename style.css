@@ -914,11 +914,11 @@ html[data-nen="luonglong"] { --chu-vang: #8a5a0c; --chu-vang2: #a8761c; }
 .o-mau.dich::before { content: '★'; color: #f2b84b; font-size: 12px; font-style: normal; }
 
 /* Huyết thống: đốm sáng đỏ chảy dọc dây nối từ cha mẹ xuống con, như mạch máu */
-.mach { fill: none; stroke: #ff6a4d; stroke-width: 2.6; stroke-linecap: round; stroke-dasharray: 3 34; opacity: .95;
-  filter: drop-shadow(0 0 3px rgba(255, 80, 60, .9)); animation: mau-chay 2.2s linear infinite; }
-.mach.dich { stroke: #ff3b2f; stroke-width: 3.2; stroke-dasharray: 4 26; animation-duration: 1.6s; }
-@keyframes mau-chay { from { stroke-dashoffset: 37; } to { stroke-dashoffset: 0; } }
+.mach { fill: none; stroke: #ff6a4d; stroke-width: 5.2; stroke-linecap: round; stroke-dasharray: 7 34; opacity: .95;
+  filter: drop-shadow(0 0 5px rgba(255, 80, 60, .9)); animation: mau-chay 2.2s linear infinite; }
+.mach.dich { stroke: #ff3b2f; stroke-width: 6.4; stroke-dasharray: 9 28; animation-duration: 1.6s; }
+@keyframes mau-chay { from { stroke-dashoffset: 41; } to { stroke-dashoffset: 0; } }
 .mach.dich { animation-name: mau-chay-dich; }
-@keyframes mau-chay-dich { from { stroke-dashoffset: 30; } to { stroke-dashoffset: 0; } }
+@keyframes mau-chay-dich { from { stroke-dashoffset: 37; } to { stroke-dashoffset: 0; } }
 .ios .mach { filter: none; }
 @media (prefers-reduced-motion: reduce) { .mach { animation: none; opacity: 0; } }
