@@ -17,8 +17,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&text=%E9%99%B3&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@600;700;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.18.2">
+<link rel="stylesheet" href="style.css?v=1.19.0">
 </head>
 <body>
 <div class="nen-loang" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -46,6 +47,16 @@
 </div>
 
 <main>
+  <!-- BẢNG TIN -->
+  <section id="tab-tin" class="tab">
+    <div class="trang">
+      <div class="hoanh-phi"><i class="truc trai"></i><div class="bien"><small>TRẦN TỘC · CÁO THỊ</small><h2>BẢNG TIN DÒNG HỌ</h2><span class="phu-de" id="tinPhuDe"></span></div><i class="truc phai"></i></div>
+      <div class="loc-tin" id="locTin"></div>
+      <div id="dsTin" class="ds-tin"></div>
+      <button class="nut-sua dang-tin" id="nutDangTin">＋ Đăng thông báo</button>
+    </div>
+  </section>
+
   <!-- PHẢ ĐỒ -->
   <section id="tab-phado" class="tab hien">
     <div class="bang-gio kinh" id="bangGio" hidden></div>
@@ -187,6 +198,7 @@
 <nav class="thanh-duoi kinh" id="thanhDuoi">
   <span class="chi-bao" id="chiBao"></span>
   <button data-tab="phado" class="chon"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.4"/><circle cx="6" cy="19" r="2.4"/><circle cx="18" cy="19" r="2.4"/><path d="M12 7.5v4M6 16.5v-2.5h12v2.5M12 11.5v2.5"/></svg><span>Phả đồ</span></button>
+  <button data-tab="tin"><svg viewBox="0 0 24 24"><path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a3 3 0 0 1-3-3V6"/><path d="M4 6a2 2 0 1 0 4 0V4M9 9h7M9 13h7M9 17h4"/></svg><span>Bảng tin</span><i class="cham-do" id="soTin" hidden></i></button>
   <button data-tab="tracuu"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></svg><span>Tra cứu</span></button>
   <button data-tab="xungho"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="16" r="3"/><path d="M11 8h5a3 3 0 0 1 3 3M13 16H8a3 3 0 0 1-3-3"/></svg><span>Xưng hô</span></button>
   <button data-tab="gio"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><span>Ngày giỗ</span><i class="cham-do" id="soGio" hidden></i></button>
@@ -238,11 +250,11 @@
   </div>
 </div>
 
-<script src="config.js?v=1.18.2"></script>
-<script src="data-mau.js?v=1.18.2"></script>
-<script src="amlich.js?v=1.18.2"></script>
-<script src="db.js?v=1.18.2"></script>
-<script src="xungho.js?v=1.18.2"></script>
-<script src="app.js?v=1.18.2"></script>
+<script src="config.js?v=1.19.0"></script>
+<script src="data-mau.js?v=1.19.0"></script>
+<script src="amlich.js?v=1.19.0"></script>
+<script src="db.js?v=1.19.0"></script>
+<script src="xungho.js?v=1.19.0"></script>
+<script src="app.js?v=1.19.0"></script>
 </body>
 </html>

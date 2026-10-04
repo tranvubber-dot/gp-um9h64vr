@@ -90,14 +90,15 @@ function doPost(e) {
   if (body.lenh === 'dangNhapSdt') return dangNhapSdt_(body, cd);
   if (body.lenh === 'layMaDN') return layMaDN_(body, cd);
   if (batDangNhap_() && !kiemVe_(body.ve)) return json_({ ok: false, loi: 'can_dang_nhap' });
-  if (body.lenh === 'sua' || body.lenh === 'them' || body.lenh === 'suaHo') {
+  if (body.lenh === 'sua' || body.lenh === 'them' || body.lenh === 'suaHo' || body.lenh === 'dangTin') {
     try { return suaThongTin_(body, cd); }
     catch (err) { console.error('suaThongTin_: ' + err + ' | ' + (err && err.stack)); return json_({ ok: false, loi: 'Lỗi máy chủ: ' + (err && err.message || err) }); }
   }
 
   if (body.ma == null) { // lấy cây gia phả (không có phần riêng tư)
     var d = docSheet_();
-    return json_({ ok: true, thongTin: d.thongTin, nguoi: d.cong, capNhat: new Date().toISOString() });
+    var tb = []; try { tb = docThongBao_(); } catch (e) {}
+    return json_({ ok: true, thongTin: d.thongTin, nguoi: d.cong, thongBao: tb, capNhat: new Date().toISOString() });
   }
   var ma = PropertiesService.getScriptProperties().getProperty('MA_GIA_DINH');
   if (!ma) return json_({ ok: false, loi: 'Ban quản trị chưa đặt mã gia đình' });
@@ -276,6 +277,7 @@ function taoMaDangNhap() {
   SpreadsheetApp.getActiveSpreadsheet().setActiveSheet(soDangNhap_());
   try { SpreadsheetApp.getActive().toast('Đã tạo mã cho mọi người có số điện thoại. Bấm "📩 Gửi mã" để nhắn cho từng người.', 'Gia phả', 8); } catch (e) {}
 }
+function moThongBao() { SpreadsheetApp.getActiveSpreadsheet().setActiveSheet(soThongBao_()); }
 function xemDangNhap() { taoMaDangNhap(); }
 function boDau_(s) {
   return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
@@ -328,6 +330,41 @@ function dangXuatTatCa() {
   if (ui.alert('Đăng xuất tất cả', 'Mọi máy sẽ phải đăng nhập lại. Làm?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
   PropertiesService.getScriptProperties().deleteProperty('BI_MAT');
   ui.alert('Xong. Mọi máy sẽ phải đăng nhập lại.');
+}
+
+/* ---------- BẢNG TIN: tab "Thông báo" (Ngày | Loại | Tiêu đề | Nội dung | Mức đóng | Hạn | Ghim | Người đăng) ---------- */
+var TAB_TB = 'Thông báo', COT_TB = ['Ngày đăng', 'Loại', 'Tiêu đề', 'Nội dung', 'Mức đóng', 'Hạn', 'Ghim', 'Người đăng'];
+var LOAI_TB = ['Việc họ', 'Đóng góp', 'Hiếu hỷ', 'Khuyến học', 'Khác'];
+function soThongBao_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), sh = ss.getSheetByName(TAB_TB);
+  if (sh) return sh;
+  sh = ss.insertSheet(TAB_TB);
+  sh.getRange('A:H').setNumberFormat('@');
+  sh.getRange(1, 1, 1, COT_TB.length).setValues([COT_TB]).setFontWeight('bold').setBackground('#8B1A1A').setFontColor('#FFE7A8');
+  sh.setFrozenRows(1);
+  [100, 100, 260, 420, 110, 100, 60, 140].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
+  sh.getRange('B2:B500').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(LOAI_TB, true).setAllowInvalid(true).build());
+  sh.getRange('G2:G500').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['x'], true).setAllowInvalid(true).build());
+  sh.getRange('A1').setNote('Mỗi dòng là 1 thông báo trên Bảng tin của app. Xoá dòng = gỡ tin. Cột Ghim ghi x để tin nằm trên cùng.');
+  sh.getRange('E1').setNote('Chỉ cho tin "Đóng góp": mức đóng, ví dụ 500.000đ/suất đinh.');
+  sh.appendRow([Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy'), 'Việc họ', 'Khai mở Bảng tin dòng họ',
+    'Từ nay các thông báo của họ (giỗ Tổ, họp họ, đóng góp, hiếu hỷ, khuyến học…) sẽ được đăng tại đây. Con cháu mở app là xem được.', '', '', 'x', 'Ban quản trị']);
+  return sh;
+}
+function docThongBao_() {
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_TB) || soThongBao_();
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, COT_TB.length).getDisplayValues().map(function (r, i) {
+    return { id: 'tb' + (i + 2), ngay: r[0], loai: r[1] || 'Khác', tieuDe: r[2], noiDung: r[3], mucDong: r[4], han: r[5], ghim: /^(x|có|1|true)$/i.test(String(r[6]).trim()), nguoi: r[7] };
+  }).filter(function (t) { return String(t.tieuDe).trim(); });
+}
+function dangTin_(t, ai) {
+  var sh = soThongBao_();
+  var hang = [Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy'), String(t.loai || 'Việc họ'), String(t.tieuDe || '').slice(0, 200),
+    String(t.noiDung || '').slice(0, 5000), String(t.mucDong || '').slice(0, 100), String(t.han || '').slice(0, 40), t.ghim ? 'x' : '', ai];
+  if (!hang[2].trim()) throw new Error('Thiếu tiêu đề');
+  sh.appendRow(hang);
+  ghiNhatKy_(ai, 'Đăng tin: ' + hang[2]);
 }
 
 /* ---------- đọc bảng Người + tra quan hệ ---------- */
@@ -419,6 +456,7 @@ function suaThongTin_(body, cd) {
   try {
     if (body.lenh === 'them') return json_({ ok: true, ma: themNguoi_(body.truong, body.quanHe, ai) });
     if (body.lenh === 'suaHo') return json_({ ok: true, daSua: suaThongTinHo_(body.truong || {}, ai) });
+    if (body.lenh === 'dangTin') { dangTin_(body.tin || {}, ai); return json_({ ok: true }); }
     var b = bang_(), dong = b.dongCua[String(body.ma || '').trim()];
     if (!dong) return json_({ ok: false, loi: 'Không tìm thấy người này trong Sheet' });
     var daSua = [], linkAnh = '';
@@ -747,6 +785,7 @@ function onOpen() {
     .addItem('Điền mã còn thiếu', 'dienMaConThieu')
     .addItem('🔠 Viết hoa toàn bộ tên', 'vietHoaTen')
     .addItem('➕ Thêm người (biểu mẫu)', 'moFormThem')
+    .addItem('📜 Bảng tin (thông báo)', 'moThongBao')
     .addSeparator()
     .addItem('🔑 Đặt mật mã quản trị của tôi', 'datMaSua')
     .addItem('👤 Cấp mật mã sửa cho người khác', 'capMaSua')

@@ -53,5 +53,10 @@ window.GP_MAU = {
     { ma: 'T031', ho_ten: 'Trần Bảo Ngọc', gioi_tinh: 'Nữ', ma_cha: 'T026', ma_me: 'T034', thu_tu: 2, ngay_sinh: '1990', noi_o: 'Hà Nội' },
     { ma: 'T036', ho_ten: 'Trần Gia Huy', gioi_tinh: 'Nam', ma_cha: 'T030', ma_me: 'T035', thu_tu: 1, ngay_sinh: '2015' },
     { ma: 'T037', ho_ten: 'Trần Khánh Linh', gioi_tinh: 'Nữ', ma_cha: 'T030', ma_me: 'T035', thu_tu: 2, ngay_sinh: '2018' }
+  ],
+  thongBao: [
+    { id: 'tb2', ngay: '02/10/2026', loai: 'Việc họ', tieuDe: 'Thông báo giỗ Tổ năm Bính Ngọ', noiDung: 'Ngày 12 tháng 3 âm lịch, con cháu các chi về nhà thờ họ dâng hương.\nTrưởng các chi báo số người về dự trước ngày 5/3 âm lịch.', ghim: true, nguoi: 'Ban quản trị' },
+    { id: 'tb3', ngay: '28/09/2026', loai: 'Đóng góp', tieuDe: 'Đóng góp tu sửa nhà thờ họ', noiDung: 'Mái ngói nhà thờ bị dột sau mùa mưa. Họ thống nhất mỗi suất đinh đóng góp để tu sửa trước Tết.', mucDong: '500.000đ/suất', han: '15/11/2026', nguoi: 'Trưởng chi Giáp' },
+    { id: 'tb4', ngay: '20/09/2026', loai: 'Khuyến học', tieuDe: 'Khen thưởng con cháu học giỏi', noiDung: 'Con cháu đạt học sinh giỏi cấp tỉnh trở lên năm học vừa qua, gia đình gửi giấy khen về ban khuyến học để họ khen thưởng.', nguoi: 'Ban khuyến học' }
   ]
 };

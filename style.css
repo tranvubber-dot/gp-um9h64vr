@@ -770,3 +770,58 @@ html[data-nen="rongphuong"] .noi, html[data-nen="sonmai"] .noi { stroke: #f0b84a
 .loc { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
 .loc select { min-width: 0; width: 100%; text-overflow: ellipsis; }
 @media (max-width: 360px) { .loc select { font-size: 13px; padding-left: 10px; padding-right: 22px; } }
+
+/* ===== Thanh dưới 6 mục ===== */
+.thanh-duoi { grid-template-columns: repeat(6, 1fr) !important; }
+.chi-bao { width: calc((100% - 12px) / 6) !important; }
+@media (max-width: 640px) { .chi-bao { width: calc((100% - 16px) / 6) !important; } }
+@media (orientation: landscape) and (max-height: 520px) { .thanh-duoi { grid-template-rows: repeat(6, 1fr) !important; grid-template-columns: 1fr !important; } .chi-bao { width: auto !important; height: calc((100% - 8px) / 6) !important; } }
+.thanh-duoi button span { font-size: 10.5px; white-space: nowrap; }
+@media (max-width: 360px) { .thanh-duoi button span { font-size: 9.5px; letter-spacing: -.02em; } }
+
+/* ===== BẢNG TIN kiểu cáo thị triều đình ===== */
+.hoanh-phi { position: relative; display: flex; align-items: stretch; margin: 4px 0 14px; filter: drop-shadow(0 10px 22px rgba(60, 10, 0, .35)); }
+.hoanh-phi .bien { flex: 1; text-align: center; padding: 16px 12px 14px; border-radius: 6px;
+  background: radial-gradient(120% 140% at 50% 0%, #a3241a 0%, #7a1410 45%, #4e0a08 100%);
+  box-shadow: inset 0 0 0 2px #e9b85a, inset 0 0 0 5px #6b0f0b, inset 0 0 0 6.5px #f3cf7a, inset 0 0 24px rgba(0, 0, 0, .45); }
+.hoanh-phi small { display: block; font: 700 11px/1 'Noto Serif', serif; letter-spacing: .32em; color: #f3cf7a; opacity: .85; }
+.hoanh-phi h2 { margin: 8px 0 4px; font: 900 clamp(20px, 6vw, 28px)/1.15 'Noto Serif', Georgia, serif; letter-spacing: .08em;
+  background: linear-gradient(180deg, #fff3c4 0%, #f2c25a 45%, #b9781a 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, .6)); }
+.hoanh-phi .phu-de { font: 600 12px 'Noto Serif', serif; color: #f6d998; opacity: .85; }
+.hoanh-phi .truc { width: 16px; flex: none; margin: -6px 0; border-radius: 8px;
+  background: linear-gradient(90deg, #3a1a08, #8a5a2a 40%, #c99a5a 55%, #5a3010); box-shadow: 0 4px 8px rgba(0, 0, 0, .35); position: relative; }
+.hoanh-phi .truc::before, .hoanh-phi .truc::after { content: ''; position: absolute; left: -3px; right: -3px; height: 9px; border-radius: 4px; background: linear-gradient(90deg, #8a5a10, #ffe08a, #b9781a); }
+.hoanh-phi .truc::before { top: -4px; } .hoanh-phi .truc::after { bottom: -4px; }
+.loc-tin { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 0 12px; }
+.loc-tin button { flex: none; border: 1px solid rgba(233, 184, 90, .55); background: rgba(122, 20, 16, .12); color: var(--chu); border-radius: 99px; padding: 7px 13px; font: 600 13px 'Noto Serif', serif; cursor: pointer; }
+.loc-tin button.chon { background: linear-gradient(180deg, #a3241a, #6b0f0b); color: #ffe7a8; border-color: #e9b85a; }
+.ds-tin { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.chieu { position: relative; padding: 18px 18px 16px; border-radius: 4px; color: #3b2410; overflow: hidden;
+  background: radial-gradient(circle at 20% 10%, rgba(255, 255, 255, .55), transparent 40%), radial-gradient(circle at 85% 90%, rgba(160, 110, 40, .18), transparent 45%),
+    linear-gradient(180deg, #f8ecc9 0%, #f0dcaa 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset, 0 0 0 1px #c9a24a, 0 0 0 4px rgba(122, 20, 16, .9), 0 0 0 5px #e9b85a, 0 14px 28px rgba(40, 10, 0, .35);
+  margin: 5px; animation: noi-len .5s ease both; animation-delay: calc(var(--i, 0) * 60ms); }
+.chieu::before { content: ''; position: absolute; left: 10px; right: 10px; top: 8px; height: 0; border-top: 1px solid rgba(139, 26, 26, .55); border-bottom: 1px solid rgba(139, 26, 26, .55); padding-top: 2px; }
+.chieu-dau { display: flex; justify-content: space-between; align-items: center; font: 600 12px 'Noto Serif', serif; color: #8b5a2b; margin-top: 4px; }
+.nhan-moi { background: #8b1a1a; color: #ffe7a8; border-radius: 3px; padding: 2px 7px; font: 700 10.5px 'Be Vietnam Pro', sans-serif; letter-spacing: .06em; }
+.chieu h3 { margin: 8px 70px 8px 0; font: 900 19px/1.3 'Noto Serif', Georgia, serif; color: #7a1410; letter-spacing: .01em; }
+.chieu-noi { font: 500 15px/1.65 'Noto Serif', Georgia, serif; color: #3b2410; }
+.chieu-noi p { margin: 0 0 8px; }
+.o-dong { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 10px 0 4px; }
+.o-dong > div { border: 1.5px solid #b9781a; border-radius: 4px; padding: 8px 10px; background: rgba(255, 248, 225, .7); }
+.o-dong small { display: block; font: 600 11px 'Be Vietnam Pro', sans-serif; color: #8b5a2b; text-transform: uppercase; letter-spacing: .06em; }
+.o-dong b { font: 900 17px 'Noto Serif', serif; color: #7a1410; }
+.chieu-cuoi { text-align: right; font: italic 600 13px 'Noto Serif', serif; color: #8b5a2b; margin-top: 8px; }
+.an-son { position: absolute; top: 34px; right: 14px; width: 58px; height: 58px; display: grid; place-items: center; transform: rotate(-9deg);
+  border: 3px double #b3261e; border-radius: 6px; color: #b3261e; font: 900 11px/1.15 'Noto Serif', serif; text-align: center; text-transform: uppercase; letter-spacing: .04em;
+  opacity: .82; mix-blend-mode: multiply; background: radial-gradient(circle, rgba(179, 38, 30, .07), transparent 70%); }
+.chieu.loai-1 .an-son { color: #8a5a00; border-color: #a86f00; }   /* Đóng góp: ấn vàng đồng */
+.chieu.loai-2 .an-son { color: #5a3a8a; border-color: #6a4aa0; }   /* Hiếu hỷ */
+.chieu.loai-3 .an-son { color: #1f6a4a; border-color: #2a7a55; }   /* Khuyến học */
+.dai-khan { position: absolute; top: 12px; left: -34px; transform: rotate(-35deg); background: linear-gradient(180deg, #c0281e, #7a1410); color: #ffe7a8;
+  font: 900 11px 'Noto Serif', serif; letter-spacing: .25em; padding: 4px 40px; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); }
+.chieu.ghim h3 { margin-left: 18px; }
+.chieu.ghim .chieu-dau { padding-left: 18px; }
+.dang-tin { margin-top: 18px; }
+@media (max-width: 380px) { .chieu { padding: 16px 14px 14px; } .chieu h3 { font-size: 17px; margin-right: 60px; } .an-son { width: 50px; height: 50px; font-size: 9.5px; } .chieu-noi { font-size: 14px; } }

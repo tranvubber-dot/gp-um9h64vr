@@ -163,7 +163,7 @@
     if (LA_MAU) {
       var t = tachRiengTu(window.GP_MAU.nguoi);
       MAU_RIENG = t.rieng;
-      return Promise.resolve({ thongTin: window.GP_MAU.thongTin, nguoi: t.cong, capNhat: null });
+      return Promise.resolve({ thongTin: window.GP_MAU.thongTin, nguoi: t.cong, thongBao: window.GP_MAU.thongBao || [], capNhat: null });
     }
     var khoa = doc('khoa', null), cu = khoa ? doc('dulieu', null) : null;
     if (!khoa) return Promise.reject({ canLink: true });
@@ -192,7 +192,7 @@
     Object.keys(ANH_TAM).forEach(function (id) { if (DB.byId[id]) DB.byId[id].anh = ANH_TAM[id]; });
     tinhXungToi();
     $('#dangTai').hidden = true;
-    veDau(); veCay(giuViTri); veTraCuu(); veXungHo(); veGio(); veDongHo(); veNhacGio();
+    veDau(); veCay(giuViTri); veTraCuu(); veXungHo(); veGio(); veDongHo(); veNhacGio(); veBangTin();
   }
 
   /* ---------- "Bạn là ai?" ---------- */
@@ -1340,7 +1340,71 @@
   $('#anBangMau').onclick = function () { ghi('anMau', true); $('#bangMau').hidden = true; requestAnimationFrame(function () { apV(); }); };
 
   /* =================== CHUYỂN TAB =================== */
+  /* ---------- BẢNG TIN: cáo thị dòng họ (tab "Thông báo" trong Google Sheet) ---------- */
+  var LOAI_TIN = ['Việc họ', 'Đóng góp', 'Hiếu hỷ', 'Khuyến học', 'Khác'], LOC_TIN = '';
+  function khoaTin(t) { return t.ngay + '|' + t.tieuDe; }
+  function dsTin() {
+    var ds = ((RAW && RAW.thongBao) || []).slice();
+    var ngayDS = function (s) { var m = String(s || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? +m[3] * 1e4 + +m[2] * 100 + +m[1] : 0; };
+    return ds.sort(function (a, b) { return (b.ghim - a.ghim) || (ngayDS(b.ngay) - ngayDS(a.ngay)); });
+  }
+  function veBangTin() {
+    var ds = dsTin(), daXem = doc('tinDaXem', []), moi = ds.filter(function (t) { return daXem.indexOf(khoaTin(t)) < 0; }).length;
+    var so = $('#soTin'); so.hidden = !moi || $('#tab-tin').classList.contains('hien'); so.textContent = moi;
+    $('#tinPhuDe').textContent = ds.length ? ds.length + ' thông báo' + (ds[0] ? ' · mới nhất ' + ds[0].ngay : '') : 'Chưa có thông báo';
+    var loai = LOAI_TIN.filter(function (l) { return ds.some(function (t) { return t.loai === l; }); });
+    $('#locTin').innerHTML = loai.length > 1 ? ['<button data-loc="" class="' + (LOC_TIN ? '' : 'chon') + '">Tất cả</button>'].concat(loai.map(function (l) {
+      return '<button data-loc="' + esc(l) + '" class="' + (LOC_TIN === l ? 'chon' : '') + '">' + esc(l) + '</button>'; })).join('') : '';
+    var hien = ds.filter(function (t) { return !LOC_TIN || t.loai === LOC_TIN; });
+    $('#dsTin').innerHTML = hien.map(function (t, i) {
+      var loaiLop = 'loai-' + LOAI_TIN.indexOf(t.loai);
+      return '<article class="chieu ' + loaiLop + (t.ghim ? ' ghim' : '') + (daXem.indexOf(khoaTin(t)) < 0 ? ' moi' : '') + '" style="--i:' + Math.min(i, 10) + '">' +
+        (t.ghim ? '<span class="dai-khan">KHẨN</span>' : '') +
+        '<div class="chieu-dau"><span>' + esc(t.ngay || '') + '</span>' + (daXem.indexOf(khoaTin(t)) < 0 ? '<span class="nhan-moi">Mới</span>' : '') + '</div>' +
+        '<h3>' + esc(t.tieuDe) + '</h3>' +
+        (t.noiDung ? '<div class="chieu-noi">' + doan(t.noiDung) + '</div>' : '') +
+        (t.mucDong || t.han ? '<div class="o-dong">' + (t.mucDong ? '<div><small>Mức đóng góp</small><b>' + esc(t.mucDong) + '</b></div>' : '') + (t.han ? '<div><small>Hạn</small><b>' + esc(t.han) + '</b></div>' : '') + '</div>' : '') +
+        '<div class="chieu-cuoi">— ' + esc(t.nguoi || 'Ban quản trị') + '</div>' +
+        '<span class="an-son"><span>' + esc(t.loai).replace(' ', '<br>') + '</span></span></article>';
+    }).join('') || '<p class="phu" style="text-align:center;margin:30px 0">Chưa có thông báo nào.</p>';
+    $('#nutDangTin').hidden = LA_MAU;
+  }
+  function danhDauDaXem() {
+    var ds = dsTin(); if (!ds.length) return;
+    ghi('tinDaXem', ds.map(khoaTin)); $('#soTin').hidden = true;
+  }
+  $('#locTin').addEventListener('click', function (e) { var b = e.target.closest('[data-loc]'); if (!b) return; LOC_TIN = b.getAttribute('data-loc'); veBangTin(); });
+  $('#nutDangTin').onclick = function () {
+    var h = '<div class="ct-dau"><div class="an-trien" aria-hidden="true">陳</div><div><h3>Đăng thông báo</h3><p class="phu">Hiện ngay trên Bảng tin của mọi người.</p></div></div>';
+    h += '<label class="o-sua"><span>Loại tin</span><select id="tinLoai">' + LOAI_TIN.map(function (l) { return '<option>' + l + '</option>'; }).join('') + '</select></label>';
+    h += '<label class="o-sua"><span>Tiêu đề</span><input id="tinTieuDe" placeholder="VD: Thông báo giỗ Tổ năm Bính Ngọ"></label>';
+    h += '<label class="o-sua"><span>Nội dung</span><textarea id="tinNoiDung" rows="6" placeholder="Thời gian, địa điểm, việc cần chuẩn bị…"></textarea></label>';
+    h += '<div class="hai-o" id="tinDong" hidden><label class="o-sua"><span>Mức đóng góp</span><input id="tinMuc" placeholder="VD: 500.000đ/suất"></label><label class="o-sua"><span>Hạn nộp</span><input id="tinHan" placeholder="VD: 15/11/2026"></label></div>';
+    h += '<label class="gat"><input type="checkbox" id="tinGhim"><span class="cong-tac"></span><span>Ghim lên đầu (tin KHẨN)</span></label>';
+    h += oMatMa() + '<div class="hang-nut" style="margin-top:14px"><button class="nut chinh" id="nutGuiTin">Đăng lên Bảng tin</button><button class="nut" id="huyTin">Huỷ</button></div>';
+    $('#noiDungNgan').innerHTML = h; $('#noiDungNgan').dataset.id = '';
+    var n = $('#nganKeo'); n.classList.add('mo'); n.setAttribute('aria-hidden', 'false'); n.scrollTop = 0; $('#manChe').hidden = window.innerWidth >= 900;
+    $('#tinLoai').onchange = function () { $('#tinDong').hidden = this.value !== 'Đóng góp'; };
+    $('#huyTin').onclick = dongNgan;
+    $('#nutGuiTin').onclick = function () {
+      var nut = this, ma = $('#suaMa').value.trim(), tin = { loai: $('#tinLoai').value, tieuDe: $('#tinTieuDe').value.trim(), noiDung: $('#tinNoiDung').value.trim(),
+        mucDong: $('#tinDong').hidden ? '' : $('#tinMuc').value.trim(), han: $('#tinDong').hidden ? '' : $('#tinHan').value.trim(), ghim: $('#tinGhim').checked };
+      if (!tin.tieuDe) { bao('Nhập tiêu đề'); $('#tinTieuDe').focus(); return; }
+      if (!ma) { bao('Nhập mật mã sửa'); $('#suaMa').focus(); return; }
+      nut.disabled = true; nut.textContent = 'Đang đăng…';
+      fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ k: doc('khoa', null), ve: doc('ve', null), lenh: 'dangTin', maSua: ma, tin: tin }) })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d || !d.ok) throw new Error(d && d.loi || 'Không đăng được');
+          ghi('maSua', ma); bao('Đã đăng thông báo ✓'); dongNgan();
+          return taiDuLieu(true).then(function (m) { RAW = m; dungLai(true); danhDauDaXem(); veBangTin(); });
+        })
+        .catch(function (e) { bao(e && e.message || 'Không kết nối được'); nut.disabled = false; nut.textContent = 'Đăng lên Bảng tin'; });
+    };
+  };
+
   function chuyenTab(t) {
+    if (t === 'tin') setTimeout(function () { danhDauDaXem(); }, 1500);
     document.querySelectorAll('.tab').forEach(function (s) { s.classList.toggle('hien', s.id === 'tab-' + t); });
     var nut = document.querySelectorAll('#thanhDuoi button');
     nut.forEach(function (b, i) {
