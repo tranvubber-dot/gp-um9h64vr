@@ -729,3 +729,4 @@ html[data-nen="rongphuong"] .noi, html[data-nen="sonmai"] .noi { stroke: #f0b84a
 .o-ma-dn { letter-spacing: .4em; font-weight: 700; text-align: center; }
 .x-dn { position: absolute; right: 12px; top: 12px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: var(--vach); color: var(--chu); font-size: 20px; cursor: pointer; }
 #manDangNhap .hop-toi { position: relative; }
+.de-sau { display: block; margin: 14px auto 0; border: 0; background: transparent; color: var(--chu3); font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; }

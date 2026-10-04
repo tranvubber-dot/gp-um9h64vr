@@ -1349,7 +1349,9 @@
     ghi('khoa', k); bao('Đang mở…'); setTimeout(function () { location.reload(); }, 300);
   };
   /* ---------- Đăng nhập "Bạn là ai, con ai?" (khi trưởng họ bật bắt đăng nhập) ---------- */
-  function moDangNhap(tuChon) {
+  // cheDo: true = mở từ nút (có ×) | 'moApp' = hiện ngay khi mở app, chưa bắt buộc (có "Để sau") | không có = bắt buộc
+  var SAU_DN = null;
+  function moDangNhap(tuChon, sau) {
     $('#dangTai').hidden = true;
     var m = $('#manDangNhap');
     if (!m) {
@@ -1368,7 +1370,8 @@
         '<label class="o-sua"><span>Bạn là con của ai? <small class="phu">(dâu/rể: gõ tên vợ/chồng)</small></span><input id="dnCon" placeholder="VD: Liêm" autocomplete="off" autocapitalize="words"></label>' +
         '<label class="o-sua" id="dnNamO" hidden><span>Năm sinh của bạn</span><input id="dnNam" inputmode="numeric" placeholder="VD: 1985"></label>' +
         '<button class="nut chinh" type="submit" style="width:100%;margin-top:6px">Vào gia phả</button></form>' +
-        '<p class="phu" id="dnLoi" style="margin-top:10px"></p></div></div>';
+        '<p class="phu" id="dnLoi" style="margin-top:10px"></p>' +
+        '<button type="button" class="de-sau" id="deSauDN" hidden>Để sau, xem trước đã</button></div></div>';
       document.body.appendChild(m);
       m.querySelectorAll('[data-dn]').forEach(function (b) {
         b.onclick = function () {
@@ -1379,6 +1382,10 @@
         };
       });
       $('#dongDN').onclick = function () { m.hidden = true; };
+      $('#deSauDN').onclick = function () {
+        m.hidden = true; try { sessionStorage.setItem('gp_deSauDN', '1'); } catch (e) {}
+        if (SAU_DN) { var f = SAU_DN; SAU_DN = null; f(); }
+      };
       var gui = function (body, nut) {
         var chu = nut.textContent; nut.disabled = true; nut.textContent = 'Đang kiểm tra…'; $('#dnLoi').textContent = '';
         body.k = doc('khoa', null);
@@ -1406,7 +1413,9 @@
         gui({ lenh: 'dangNhap', ten: ten, conAi: con, namSinh: $('#dnNam').value.trim() }, this.querySelector('button'));
       };
     }
-    $('#dongDN').hidden = !tuChon;
+    $('#dongDN').hidden = tuChon !== true;
+    $('#deSauDN').hidden = tuChon !== 'moApp';
+    SAU_DN = sau || null;
     m.hidden = false;
     setTimeout(function () { var i = $('#dnSdt'); if (i && !$('#formSdt').hidden) i.focus(); }, 300);
   }
@@ -1607,7 +1616,10 @@
   }).then(function (d) {
     RAW = d; dungLai(); G._daVua = true;
     try { if (sessionStorage.getItem('gp_vuaKhoiPhuc')) { sessionStorage.removeItem('gp_vuaKhoiPhuc'); setTimeout(function () { bao('Đã khôi phục cài đặt của bạn từ link'); }, 600); } } catch (e) {}
-    if (!TOI && !doc('boQuaToi', false)) setTimeout(moHoiToi, 500);
+    var hoiToi = function () { if (!TOI && !doc('boQuaToi', false)) setTimeout(moHoiToi, 300); };
+    var daBoQua = false; try { daBoQua = !!sessionStorage.getItem('gp_deSauDN'); } catch (e) {}
+    if (!LA_MAU && !doc('ve', null) && !daBoQua) setTimeout(function () { moDangNhap('moApp', hoiToi); }, 400); // cửa vào: đăng nhập trước
+    else hoiToi();
   }); }
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(function () {});
 
