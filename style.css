@@ -890,3 +890,10 @@ html[data-nen="luonglong"] { --chu-vang: #8a5a0c; --chu-vang2: #a8761c; }
 .dong-so input { flex: 1; min-width: 0; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--kinh-vien); background: var(--kinh-dam); color: inherit; font: inherit; font-size: 16px; outline: none; }
 .xoa-so { flex: none; width: 40px; border: 0; border-radius: 12px; background: var(--vach); color: var(--chu2); font-size: 15px; cursor: pointer; }
 .them-so { margin: 2px 0 12px; }
+/* Dòng đích: khung viền đôi đỏ son + bốn góc chạm vàng */
+.vien-dich { fill: none; stroke: url(#gDich); stroke-width: 2.2; opacity: .95; }
+.goc-dich { fill: none; stroke: #f2b84b; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 2px rgba(242, 184, 75, .6)); }
+.ios .goc-dich { filter: none; }
+.huy.ga { background: linear-gradient(135deg, #a3241a, #e5383b); color: #ffe7a8; }
+.o-mau.dich { background: transparent; border: 1.5px solid #e5383b; box-shadow: 0 0 0 1.5px var(--nen), 0 0 0 3px #f2b84b; border-radius: 3px; }
+@media (max-width: 640px) { .chu-giai { flex-wrap: wrap; max-width: calc(100% - 178px); row-gap: 3px; } }

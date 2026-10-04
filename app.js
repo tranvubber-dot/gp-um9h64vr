@@ -404,10 +404,14 @@
       var tc = chu(cb, giua ? tx : tx + 6, 63, bac, '', bw - 12 < doDai(bac, '600 10.5px "Be Vietnam Pro", sans-serif') ? bw - 12 : 0);
       if (giua) tc.setAttribute('text-anchor', 'middle');
     }
-    if (p.dich) {
-      var hd = el('g', { 'class': 'huy-dich' }, vo);
-      el('rect', { x: CW - 46, y: -8, width: 50, height: 19, rx: 9.5 }, hd);
-      chu(hd, CW - 21, 5.5, '★ Đích', '').setAttribute('text-anchor', 'middle');
+    if (p.dich) { // dòng đích: khung riêng — viền đôi đỏ son + bốn góc chạm vàng (không dùng nhãn sao)
+      var kd = el('g', { 'class': 'khung-dich' }, vo), o = 5, X0 = -o, Y0 = -o, X1 = CW + o, Y1 = CH + o, L = 13;
+      el('rect', { 'class': 'vien-dich', x: X0, y: Y0, width: CW + 2 * o, height: CH + 2 * o, rx: 24 }, kd);
+      [[X0, Y0, 1, 1], [X1, Y0, -1, 1], [X0, Y1, 1, -1], [X1, Y1, -1, -1]].forEach(function (c) {
+        var x = c[0], y = c[1], sx = c[2], sy = c[3];
+        el('path', { 'class': 'goc-dich', d: 'M' + x + ',' + (y + sy * L) + 'V' + (y + sy * 5) + 'Q' + x + ',' + y + ' ' + (x + sx * 5) + ',' + y + 'H' + (x + sx * L) +
+          'M' + (x + sx * 3) + ',' + (y + sy * 3) + 'l' + (sx * 3.2) + ',' + (sy * 3.2) }, kd);
+      });
     }
     return g;
   }
@@ -663,7 +667,7 @@
     danhDauChon(id);
     var huy = ['Đời ' + p.doi, tenChi(p), p.dauRe ? vaiDauRe(p) : (p === DB.thuyTo ? 'Thủy tổ' : p.thuBac), p.daMat ? 'Đã mất' : '']
       .filter(Boolean).map(function (x) { return '<span class="huy">' + esc(x) + '</span>'; }).join('');
-    if (p.dich) huy = '<span class="huy ga">★ Dòng đích</span>' + huy;
+    if (p.dich) huy = '<span class="huy ga">Dòng đích</span>' + huy;
     var h = p.anh ? '<div class="anh-lon" data-xem-anh="' + esc(p.anh) + '"><img src="' + esc(p.anh) + '" alt="' + esc(p.ten) + '" referrerpolicy="no-referrer" onerror="GP_anhLoi(this)"><span class="phong">⤢</span></div>' : '';
     h += '<div class="ct-dau">' + cham(p) + '<div><h3>' + esc(p.ten) + '</h3><p class="phu">' + huy + '</p></div></div>';
     if (TOI && XH_TOI[id] && XH_TOI[id].goi) h += '<div class="xh-toi"><div><small>Bạn gọi là</small><b>' + esc(XH_TOI[id].goi) + '</b></div><div><small>Người này gọi bạn là</small><b>' + esc(XH_TOI[id].duocGoi || '—') + '</b></div></div>';
@@ -1383,7 +1387,7 @@
       '<label><span>Kiểu truyền thống<br><span class="phu">Phả đồ chỉ vẽ con trai, con gái ghi trong thẻ của cha</span></span><input class="cong-tac" type="checkbox" id="cdTT"' + (CD.truyenThong ? ' checked' : '') + '></label>' +
       '<label><span>Hiện cháu ngoại<br><span class="phu">Con của con gái, 1 đời</span></span><input class="cong-tac" type="checkbox" id="cdNT"' + (CD.hienNgoaiTon ? ' checked' : '') + (CD.truyenThong ? ' disabled' : '') + '></label>' +
       '<label><span>Con trai trước, con gái sau<br><span class="phu">Theo tục cũ. Tắt thì xếp theo thứ tự sinh</span></span><input class="cong-tac" type="checkbox" id="cdTr"' + (CD.traiTruocGaiSau ? ' checked' : '') + '></label>' +
-      '<p class="phu">Con của bà cả luôn xếp trước con của bà kế, bà thứ. Chi đặt tên Giáp, Ất, Bính… theo thứ tự con trai của cụ Thủy tổ. Dòng đích (viền đỏ) đi theo con trai trưởng qua từng đời, không tính con nuôi.</p>';
+      '<p class="phu">Con của bà cả luôn xếp trước con của bà kế, bà thứ. Chi đặt tên Giáp, Ất, Bính… theo thứ tự con trai của cụ Thủy tổ. Dòng đích (khung viền đôi, bốn góc vàng) đi theo con trai trưởng qua từng đời, không tính con nuôi.</p>';
     function doi(k2, v) { CD[k2] = v; ghi('cachxem', CD); setTimeout(dungLai, 380); } // chờ công tắc nảy xong
     $('#cdTT').onchange = function () { doi('truyenThong', this.checked); };
     $('#cdNT').onchange = function () { doi('hienNgoaiTon', this.checked); };
