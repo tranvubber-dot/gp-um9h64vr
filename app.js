@@ -755,8 +755,8 @@
   function laQT() { return !!doc('veQT', null); }
   function oMatMa(tuyChon) {
     if (laQT()) return '<p class="phu qt-dang" style="margin:6px 2px 4px">🛡️ Bạn đang đăng nhập quản trị — không cần mật mã.</p><input id="suaMa" type="hidden" value="">';
-    if (tuyChon) return '<label class="o-sua"><span>Mật mã sửa <small class="phu">(chỉ đổi ảnh thì không cần)</small></span><input id="suaMa" type="password" value="' + esc(doc('maSua', '') || '') + '" placeholder="Người quản lý gia phả cấp cho bạn" autocomplete="off"></label>';
-    return '<label class="o-sua"><span>Mật mã sửa</span><input id="suaMa" type="password" value="' + esc(doc('maSua', '') || '') + '" placeholder="Người quản lý gia phả cấp cho bạn" autocomplete="off"></label>';
+    if (tuyChon) return '<label class="o-sua"><span>🔑 Mã chỉnh sửa <small class="phu">(người quản lý cấp · chỉ đổi ảnh thì không cần)</small></span><input id="suaMa" type="password" value="' + esc(doc('maSua', '') || '') + '" placeholder="Người quản lý gia phả cấp cho bạn" autocomplete="off"></label>';
+    return '<label class="o-sua"><span>🔑 Mã chỉnh sửa <small class="phu">(người quản lý cấp, để sửa / thêm / đăng tin)</small></span><input id="suaMa" type="password" value="' + esc(doc('maSua', '') || '') + '" placeholder="Người quản lý gia phả cấp cho bạn" autocomplete="off"></label>';
   }
   function quanHeCu(id, k) { // mã đang ghi ở dòng này, chỉ khi nó trỏ đúng người (bỏ mã cũ sai)
     var r = dongGoc(id), raw = String(r[k] || '').trim(); if (!raw) return '';
@@ -881,7 +881,7 @@
     });
     if (them && them !== 'ho' && !truong.ho_ten) { bao('Nhập họ và tên'); $('#noiDungNgan [data-truong="ho_ten"]').focus(); return; }
     if (!co) { bao('Chưa thay đổi gì'); return; }
-    if (!ma && !laQT() && !(!them && ANH_MOI && !Object.keys(truong).length && !(DB.byId[id] && DB.byId[id].daMat))) { bao('Nhập mật mã sửa (người quản lý cấp)'); $('#suaMa').focus(); return; }
+    if (!ma && !laQT() && !(!them && ANH_MOI && !Object.keys(truong).length && !(DB.byId[id] && DB.byId[id].daMat))) { bao('Nhập mã chỉnh sửa (người quản lý cấp)'); $('#suaMa').focus(); return; }
     var chu = nut.textContent;
     nut.disabled = true; nut.textContent = ANH_MOI && !them ? 'Đang tải ảnh lên…' : 'Đang lưu…';
     var chiAnh = !them && ANH_MOI && !Object.keys(truong).length;
@@ -1263,9 +1263,9 @@
     var ve = function () {
       var d = QT.dl, n = $('#qtNoi'); if (!n || !d) return;
       if (QT.tab === 'ma') {
-        n.innerHTML = '<div class="qt-cap"><div class="o-goi-y"><input id="qtTen" placeholder="Gõ tên người được cấp, VD: chinh" autocomplete="off"><ul class="goi-y" id="qtGoiY" hidden></ul></div><select id="qtLoai"><option value="sua">Chỉnh sửa</option><option value="tin">Chỉ đăng tin</option></select><button class="nut chinh" id="qtCap">Cấp mã</button></div><div id="qtKetQua"></div>' +
+        n.innerHTML = '<div class="giai-ma"><b>🔑 Mã chỉnh sửa</b> — để <b>thêm người, sửa thông tin</b> (họ tên, ngày sinh/mất/giỗ, cha mẹ, vợ chồng), sửa người đã mất, viết gốc gác và <b>đăng tin</b>.<br><b>📢 Mã chỉ đăng tin</b> — chỉ đăng được <b>Bảng tin</b>, không sửa được gia phả.<br><span class="phu">Người được cấp gõ mã vào ô “Mã chỉnh sửa” khi sửa hoặc đăng tin. Đổi ảnh người còn sống thì không cần mã.</span></div><div class="qt-cap"><div class="o-goi-y"><input id="qtTen" placeholder="Gõ tên người được cấp, VD: chinh" autocomplete="off"><ul class="goi-y" id="qtGoiY" hidden></ul></div><select id="qtLoai"><option value="sua">🔑 Mã chỉnh sửa</option><option value="tin">📢 Mã chỉ đăng tin</option></select><button class="nut chinh" id="qtCap">Cấp mã</button></div><div id="qtKetQua"></div>' +
           (d.quyenSua.length ? '<ul class="qt-ds">' + d.quyenSua.map(function (q) {
-            return '<li><div><b>' + esc(q.ten) + '</b><span class="phu">' + esc(q.loai) + ' · ' + esc(q.cap || '') + '</span></div><code>' + esc(q.ma) + '</code><button class="nut nho" data-thuhoi="' + esc(q.ma) + '">Thu hồi</button></li>'; }).join('') + '</ul>' : '<p class="phu">Chưa cấp mã cho ai.</p>');
+            return '<li><div><b>' + esc(q.ten) + '</b><span class="phu">' + (/tin/i.test(q.loai) ? '📢 Chỉ đăng tin' : '🔑 Chỉnh sửa') + ' · ' + esc(q.cap || '') + '</span></div><code>' + esc(q.ma) + '</code><button class="nut nho" data-thuhoi="' + esc(q.ma) + '">Thu hồi</button></li>'; }).join('') + '</ul>' : '<p class="phu">Chưa cấp mã cho ai.</p>');
         // gợi ý tên đầy đủ từ gia phả (gõ không dấu cũng được)
         var bd = function (x) { return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase(); };
         var oT = $('#qtTen'), gy = $('#qtGoiY');
@@ -1281,7 +1281,7 @@
           var ten = $('#qtTen').value.trim(), loai = $('#qtLoai').value, nut = this; if (!ten) { bao('Gõ tên người được cấp'); $('#qtTen').focus(); return; }
           nut.disabled = true;
           goiQT('capMa', { ten: ten, loai: loai }).then(function (r) {
-            $('#qtKetQua').innerHTML = '<div class="qt-moi"><small>Mã ' + esc(r.loai.toLowerCase()) + ' của ' + esc(ten) + '</small><b>' + esc(r.ma) + '</b><a class="nut chinh" target="_blank" rel="noopener" href="gui-ma.html#loai=' + loai + '&m=' + r.ma + '&t=' + encodeURIComponent(ten) + '">💬 Gửi qua Zalo</a></div>';
+            $('#qtKetQua').innerHTML = '<div class="qt-moi"><small>' + (loai === 'tin' ? '📢 Mã chỉ đăng tin' : '🔑 Mã chỉnh sửa') + ' của ' + esc(ten) + '</small><b>' + esc(r.ma) + '</b><span class="phu">' + (loai === 'tin' ? 'Dùng để đăng tin ở Bảng tin.' : 'Dùng để thêm người, sửa thông tin, đăng tin.') + '</span><a class="nut chinh" target="_blank" rel="noopener" href="gui-ma.html#loai=' + loai + '&m=' + r.ma + '&t=' + encodeURIComponent(ten) + '">💬 Gửi qua Zalo</a></div>';
             return goiQT('ds');
           }).then(function (d2) { QT.dl = d2; var kq = $('#qtKetQua').innerHTML; ve(); $('#qtKetQua').innerHTML = kq; })
             .catch(function (e) { bao(e.message); }).then(function () { nut.disabled = false; });
@@ -1290,11 +1290,11 @@
           b.onclick = function () { if (!confirm('Thu hồi mã này? Người đó sẽ không sửa được nữa.')) return; goiQT('thuHoi', { ma: b.getAttribute('data-thuhoi') }).then(function () { return goiQT('ds'); }).then(function (d2) { QT.dl = d2; ve(); bao('Đã thu hồi mã'); }).catch(function (e) { bao(e.message); }); };
         });
       } else {
-        n.innerHTML = d.dangNhap.length ? '<p class="phu">Ghi số điện thoại cho ai (sửa thông tin người đó) là người đó có mã đăng nhập.</p><ul class="qt-ds">' + d.dangNhap.map(function (x) {
+        n.innerHTML = '<div class="giai-ma"><b>📱 Mã đăng nhập</b> — để <b>vào app</b>. Mỗi người có số điện thoại trong gia phả tự có 1 mã. Mở app → gõ số điện thoại → <b>Lấy mã</b> → gõ lại mã là vào. Máy nhớ luôn, lần sau không phải nhập lại.<br><span class="phu">Công tắc xanh = được vào app. Gạt tắt = chặn người đó.</span></div>' + (d.dangNhap.length ? '<ul class="qt-ds">' + d.dangNhap.map(function (x) {
           var chan = /chặn/i.test(x.quyen);
           return '<li class="' + (chan ? 'bi-chan' : '') + '"><div><b>' + esc(x.ten) + '</b><span class="phu">' + esc(x.sdt) + ' · mã ' + esc(x.maDN) + (x.lanCuoi ? ' · dùng ' + esc(x.lanCuoi) : ' · chưa vào') + '</span></div>' +
-            '<label class="gat nho"><input type="checkbox" data-chan="' + esc(x.ma) + '"' + (chan ? '' : ' checked') + '><span class="cong-tac"></span></label></li>'; }).join('') + '</ul><p class="phu">Công tắc xanh = được vào app. Gạt tắt = chặn.</p>'
-          : '<p class="phu">Chưa ai có số điện thoại trong bảng.</p>';
+            '<label class="gat nho"><input type="checkbox" data-chan="' + esc(x.ma) + '"' + (chan ? '' : ' checked') + '><span class="cong-tac"></span></label></li>'; }).join('') + '</ul>'
+          : '<p class="phu">Chưa ai có số điện thoại. Sửa thông tin một người, điền số điện thoại là người đó có mã đăng nhập.</p>');
         n.querySelectorAll('[data-chan]').forEach(function (c) {
           c.onchange = function () { var chan = !c.checked; goiQT('chan', { ma: c.getAttribute('data-chan'), chan: chan }).then(function () { bao(chan ? 'Đã chặn' : 'Đã cho phép'); c.closest('li').classList.toggle('bi-chan', chan); }).catch(function (e) { bao(e.message); c.checked = !c.checked; }); };
         });
@@ -1501,7 +1501,7 @@
       var nut = this, ma = $('#suaMa').value.trim(), tin = { loai: $('#tinLoai').value, tieuDe: $('#tinTieuDe').value.trim(), noiDung: $('#tinNoiDung').value.trim(),
         mucDong: $('#tinDong').hidden ? '' : $('#tinMuc').value.trim(), han: $('#tinDong').hidden ? '' : $('#tinHan').value.trim(), ghim: $('#tinGhim').checked };
       if (!tin.tieuDe) { bao('Nhập tiêu đề'); $('#tinTieuDe').focus(); return; }
-      if (!ma && !laQT()) { bao('Nhập mật mã sửa'); $('#suaMa').focus(); return; }
+      if (!ma && !laQT()) { bao('Nhập mã chỉnh sửa'); $('#suaMa').focus(); return; }
       nut.disabled = true; nut.textContent = 'Đang đăng…';
       fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ k: doc('khoa', null), ve: doc('ve', null), veQT: doc('veQT', null), lenh: 'dangTin', maSua: ma, tin: tin }) })
         .then(function (r) { return r.json(); })
@@ -1560,6 +1560,7 @@
         '<p class="phu">🔒 Chỉ con cháu ' + esc(tenNhanh()) + ' có số điện thoại trong gia phả mới vào được.</p>' +
         '<div class="chon-dn" hidden><button type="button" data-dn="sdt" class="chon">📱 Số điện thoại</button><button type="button" data-dn="ten">👪 Bạn là con ai?</button></div>' +
         '<form id="formSdt" class="form-dn">' +
+        '<p class="phu giai-dn">📱 Gõ <b>số điện thoại</b> của bạn (số đã ghi trong gia phả) → bấm <b>Lấy mã</b> → gõ lại <b>mã đăng nhập</b> hiện ra là vào. Máy nhớ luôn, lần sau mở là vào thẳng.</p>' +
         '<label class="o-sua"><span>Số điện thoại của bạn</span><input id="dnSdt" type="tel" inputmode="tel" placeholder="VD: 0943 xxx xxx" autocomplete="tel"></label>' +
         '<div id="khungMa" hidden><div class="ma-tra-ve">Mã đăng nhập của <b id="dnTenNguoi"></b><span class="ma-to" id="dnMaHien"></span></div>' +
         '<label class="o-sua"><span>Gõ lại mã ở trên</span><input id="dnMa" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code" class="o-ma-dn"></label></div>' +
@@ -1643,7 +1644,7 @@
     chu += '<div class="ct-dau"><div class="an-trien" aria-hidden="true">陳</div><div><h3>' + esc(tt.ten_dong_ho || 'Gia phả') + '</h3><p class="phu">Gốc gác dòng họ</p></div></div>';
     chu += '<div class="the-so nho">' + [[DB.list.length, 'người'], [DB.soDoi, 'đời'], [DB.chiList.length, 'chi']].map(function (x) { return '<div class="kinh"><b>' + x[0] + '</b><span>' + x[1] + '</span></div>'; }).join('') + '</div>';
     chu += '<dl class="bang-tt">' + dong('Quê gốc', esc(tt.que_goc)) + (tt0 ? dong('Cụ Thủy tổ', '<span class="lien-ket" data-mo-nguoi="' + esc(tt0.id) + '">' + esc(tt0.ten) + '</span>' + (chuNam(tt0) ? ' <span class="phu">(' + esc(chuNam(tt0)) + ')</span>' : '')) : '') + '</dl>';
-    chu += '<div class="muc-ct"><h4>Nguồn gốc / phả ký</h4><div class="tieu-su">' + (doan(tt.pha_ky) || '<p class="phu">Chưa có. Người có mật mã sửa có thể viết ngay ở nút dưới.</p>') + '</div></div>';
+    chu += '<div class="muc-ct"><h4>Nguồn gốc / phả ký</h4><div class="tieu-su">' + (doan(tt.pha_ky) || '<p class="phu">Chưa có. Người có mã chỉnh sửa có thể viết ngay ở nút dưới.</p>') + '</div></div>';
     if (tt.nha_tho_ho || tt.ban_do_nha_tho) chu += '<div class="muc-ct"><h4>Nhà thờ họ</h4><p>' + esc(tt.nha_tho_ho || '') + (tt.ban_do_nha_tho ? '<br><a class="lien-ket" target="_blank" rel="noopener" href="' + esc(laLink(tt.ban_do_nha_tho) ? tt.ban_do_nha_tho : 'https://maps.google.com/?q=' + encodeURIComponent(tt.ban_do_nha_tho)) + '">Mở bản đồ chỉ đường</a>' : '') + '</p></div>';
     if (tt.toc_uoc) chu += '<div class="muc-ct"><h4>Tộc ước</h4><div class="tieu-su">' + doan(tt.toc_uoc) + '</div></div>';
     if (!LA_MAU) chu += '<button class="nut-sua" id="suaGocGac" style="margin-top:14px"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>Viết / sửa gốc gác dòng họ</button>';

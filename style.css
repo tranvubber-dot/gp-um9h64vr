@@ -881,3 +881,6 @@ html[data-nen="luonglong"] { --chu-vang: #8a5a0c; --chu-vang2: #a8761c; }
 .goi-y li > div { display: flex; flex-direction: column; min-width: 0; }
 .goi-y small { font-size: 12px; color: var(--chu2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .goi-y .cham { width: 32px; height: 32px; font-size: 13px; }
+.giai-ma { margin: 4px 0 12px; padding: 10px 12px; border-radius: 12px; background: rgba(66, 133, 244, .1); border: 1px solid rgba(66, 133, 244, .25); font-size: 13.5px; line-height: 1.55; }
+.giai-dn { text-align: left; margin: 10px 0 4px; font-size: 13.5px; line-height: 1.5; }
+.qt-moi .phu { font-size: 12.5px; }

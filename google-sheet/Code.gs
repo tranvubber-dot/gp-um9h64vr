@@ -560,7 +560,7 @@ function suaThongTin_(body, cd) {
     var bb = bang_(), conSong = maNguoi && bb.dongCua[maNguoi] && !(bb.o(maNguoi, 'ngay_mat') || bb.o(maNguoi, 'da_mat') || bb.o(maNguoi, 'ngay_gio'));
     if (conSong && !dsKhoa_()[maNguoi]) { var mv = kiemVe_(body.ve); ai = mv ? (bb.tenCua[mv] || mv) + ' (tự đổi ảnh)' : 'Người xem (tự đổi ảnh)'; quyen = 'anh'; }
   }
-  if (!ai) { if (body.maSua) cd.tang(); return json_({ ok: false, loi: body.maSua ? 'Sai mật mã sửa (hoặc đã bị thu hồi)' : 'Cần mật mã sửa (hoặc đăng nhập quản trị)' }); }
+  if (!ai) { if (body.maSua) cd.tang(); return json_({ ok: false, loi: body.maSua ? 'Sai mã chỉnh sửa (hoặc đã bị thu hồi)' : 'Cần mã chỉnh sửa (hoặc đăng nhập quản trị)' }); }
   if (quyen === 'tin' && body.lenh !== 'dangTin') return json_({ ok: false, loi: 'Mã của bạn chỉ dùng để đăng thông báo.' });
   if ((body.lenh === 'sua') && maNguoi && dsKhoa_()[maNguoi] && !qt) return json_({ ok: false, loi: 'Thông tin người này đang khoá. Gạt công tắc mở khoá rồi sửa.' });
   var lock = LockService.getDocumentLock(); lock.waitLock(20000);
