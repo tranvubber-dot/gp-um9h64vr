@@ -290,10 +290,12 @@
 
   /* ---------- ĐẦU TRANG ---------- */
   function veDau() {
-    var tt = DB.thongTin, ten = tt.ten_dong_ho || 'Họ Trần';
-    $('#tenHo').textContent = 'Gia phả ' + ten;
-    document.title = 'Gia phả ' + ten;
-    $('#queGoc').textContent = tt.que_goc ? 'Quê gốc: ' + tt.que_goc : DB.list.length + ' người · ' + DB.soDoi + ' đời';
+    var tt = DB.thongTin, ho = tt.ten_dong_ho || 'Họ Trần';
+    var hoaDau = function (x) { return String(x || '').toLowerCase().replace(/(^|\s)(\S)/g, function (m, a, b) { return a + b.toUpperCase(); }); };
+    var ten = DB.thuyTo ? 'Con cháu Ông ' + hoaDau(DB.thuyTo.ten) : 'Gia phả ' + ho; // app là một nhánh: con cháu cụ Thủy tổ trong bảng
+    $('#tenHo').textContent = ten;
+    document.title = ten;
+    $('#queGoc').textContent = [ho, tt.que_goc ? 'Quê gốc: ' + tt.que_goc : DB.list.length + ' người · ' + DB.soDoi + ' đời'].join(' · ');
     $('#bangMau').hidden = !LA_MAU || doc('anMau', false);
     veNutToi();
   }
@@ -336,7 +338,7 @@
   }
 
   function veThe(p, x, y, cha) {
-    var lop = 'the ' + (p.gioi === 'nu' ? 'nu' : 'nam') + (p.daMat ? ' mat' : '') + (p.dauRe ? ' dr' : '') + (p.id === chonId ? ' chon' : '') + (p.id === TOI ? ' toi' : '');
+    var lop = 'the ' + (p.gioi === 'nu' ? 'nu' : 'nam') + (p.daMat ? ' mat' : '') + (p.dauRe ? ' dr' : '') + (p.id === chonId ? ' chon' : '') + (p.id === TOI ? ' toi' : '') + (laCuTo(p) ? ' cu-to' : '');
     var g = el('g', { 'class': lop, 'data-id': p.id, transform: 'translate(' + x + ',' + y + ')' }, cha);
     var vo = el('g', { 'class': 'vo' }, g);
     if (laCuTo(p)) { // ảnh thờ trong khung vàng, dựng tách phía trên thẻ
@@ -369,7 +371,8 @@
     el('rect', { 'class': 'nen', width: CW, height: CH, rx: 20 }, vo);
     el('rect', { 'class': 'to-mau', x: 1.5, y: 1.5, width: CW - 3, height: CH - 3, rx: 18.5 }, vo);
     // ảnh tròn / chữ cái đầu trên nền chuyển màu
-    var cx = 33, cy = CH / 2, r = 21;
+    var cx = 33, cy = CH / 2, r = 21, coAvatar = !laCuTo(p); // cụ Tổ đã có ảnh thờ trong khung phía trên → bỏ ảnh tròn
+    if (coAvatar) {
     el('circle', { cx: cx, cy: cy, r: r, fill: p.gioi === 'nu' ? 'url(#gNu)' : 'url(#gNam)' }, vo); // màu ảnh theo giới tính; nền thẻ theo tình trạng
     chu(vo, cx, cy + 6, tenGoi(p).charAt(0).toUpperCase(), 'chu-cai').setAttribute('text-anchor', 'middle');
     if (p.anh) {
@@ -379,7 +382,8 @@
       el('circle', { cx: cx, cy: cy, r: r, fill: 'none', stroke: 'rgba(255,255,255,.9)', 'stroke-width': 2 }, vo);
     }
     el('circle', { 'class': p.daMat ? 'vong-mat' : 'vong-song', cx: cx, cy: cy, r: r + 3.5 }, vo);
-    var tx = 63, w = CW - tx - 10;
+    }
+    var tx = coAvatar ? 63 : 20, w = CW - tx - 10;
     chu(vo, tx, 26, p.ten, 'ten', w);
     chu(vo, tx, 43, chuNam(p) || (p.daMat ? '' : 'Còn sống'), 'nam-st');
     var bac = p.dauRe ? (p.gioi === 'nu' ? (p.vai || 'Vợ') : 'Chồng') : (p === DB.thuyTo ? 'Thủy tổ' : (p.ngoaiTon ? 'Cháu ngoại' : (p.thuBac || '')));
