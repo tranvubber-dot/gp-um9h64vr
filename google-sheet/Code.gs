@@ -159,14 +159,53 @@ function biMat_() {
   return s;
 }
 function ky_(s) { return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(String(s), biMat_())).replace(/=+$/, '').slice(0, 24); }
-function kiemVe_(ve) { // vé = "T005.<hạn>.<chữ ký>"; người bị xoá khỏi bảng thì vé hết tác dụng
+function kiemVe_(ve) { // vé = "T005.<hạn>.<chữ ký>"; người bị xoá khỏi bảng hoặc bị "Chặn" thì vé hết tác dụng
   var x = String(ve || '').split('.'); if (x.length !== 3) return null;
   if (ky_(x[0] + '.' + x[1]) !== x[2] || +x[1] < Date.now()) return null;
   var cache = CacheService.getScriptCache(), k = 've_' + x[0];
-  if (cache.get(k)) return x[0];
-  if (!bang_().dongCua[x[0]]) return null;
-  cache.put(k, '1', 300); return x[0];
+  if (!cache.get(k)) { if (!bang_().dongCua[x[0]]) return null; cache.put(k, '1', 300); }
+  if (biChan_(x[0])) return null;
+  if (!cache.get('lc_' + x[0])) { cache.put('lc_' + x[0], '1', 21600); try { ghiDangNhap_(x[0], null, false); } catch (e) {} } // "lần cuối dùng", tối đa 6 tiếng ghi 1 lần
+  return x[0];
 }
+
+/* ---------- Tab "Đăng nhập": ai đã vào app, lần cuối dùng, cột Quyền = Cho phép / Chặn ---------- */
+var TAB_DN = 'Đăng nhập';
+function soDangNhap_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), sh = ss.getSheetByName(TAB_DN);
+  if (sh) return sh;
+  sh = ss.insertSheet(TAB_DN);
+  sh.appendRow(['Mã', 'Họ tên', 'Lần đầu vào', 'Lần cuối dùng', 'Số lần đăng nhập', 'Quyền']);
+  sh.setFrozenRows(1);
+  sh.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#2E7D5B').setFontColor('#FFFFFF');
+  [70, 220, 140, 140, 120, 110].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
+  sh.getRange('F1').setNote('Chọn "Chặn" để khoá người này (bị đăng xuất trong vài phút). Chọn "Cho phép" để mở lại.');
+  sh.getRange('F2:F1000').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Cho phép', 'Chặn'], true).build());
+  return sh;
+}
+function ghiDangNhap_(ma, ten, laDangNhap) {
+  var sh = soDangNhap_(), now = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm');
+  var n = sh.getLastRow(), ds = n > 1 ? sh.getRange(2, 1, n - 1, 1).getDisplayValues() : [];
+  for (var i = 0; i < ds.length; i++) if (ds[i][0] === ma) {
+    sh.getRange(i + 2, 4).setValue(now);
+    if (laDangNhap) sh.getRange(i + 2, 5).setValue((+sh.getRange(i + 2, 5).getValue() || 0) + 1);
+    return;
+  }
+  if (!laDangNhap) return;
+  sh.appendRow([ma, ten || '', now, now, 1, 'Cho phép']);
+}
+function biChan_(ma) {
+  var cache = CacheService.getScriptCache(), k = 'chan_' + ma, c = cache.get(k);
+  if (c) return c === '1';
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_DN), chan = false;
+  if (sh && sh.getLastRow() > 1) {
+    var v = sh.getRange(2, 1, sh.getLastRow() - 1, 6).getDisplayValues();
+    for (var i = 0; i < v.length; i++) if (v[i][0] === ma) { chan = /chặn/i.test(v[i][5]); break; }
+  }
+  cache.put(k, chan ? '1' : '0', 120);
+  return chan;
+}
+function xemDangNhap() { SpreadsheetApp.getActiveSpreadsheet().setActiveSheet(soDangNhap_()); }
 function boDau_(s) {
   return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
     .toLowerCase().replace(/[^a-z0-9 ]+/g, ' ')
@@ -192,7 +231,8 @@ function dangNhap_(body, cd) {
   if (!ds.length) { cd.tang(); return json_({ ok: false, loi: 'Không tìm thấy bạn trong gia phả. Kiểm tra lại tên, hoặc nhờ trưởng họ thêm bạn vào bảng.' }); }
   if (ds.length > 1) return json_({ ok: false, trung: true, loi: 'Có ' + ds.length + ' người trùng. Gõ họ tên đầy đủ hoặc thêm năm sinh.' });
   var ma = ds[0], het = Date.now() + 400 * 864e5;
-  ghiNhatKy_(b.tenCua[ma] + ' (' + ma + ')', 'Đăng nhập app');
+  if (biChan_(ma)) return json_({ ok: false, loi: 'Bạn đang bị trưởng họ tạm khoá. Liên hệ trưởng họ để được mở lại.' });
+  ghiDangNhap_(ma, b.tenCua[ma], true);
   return json_({ ok: true, ve: ma + '.' + het + '.' + ky_(ma + '.' + het), ma: ma, ten: b.tenCua[ma] });
 }
 /* Menu: bật / tắt bắt đăng nhập */
@@ -636,6 +676,7 @@ function onOpen() {
     .addItem('👤 Cấp mật mã sửa cho người khác', 'capMaSua')
     .addSeparator()
     .addItem('🔒 Bật / tắt bắt đăng nhập', 'batTatDangNhap')
+    .addItem('📋 Xem ai đã đăng nhập / chặn', 'xemDangNhap')
     .addItem('🚪 Đăng xuất tất cả máy', 'dangXuatTatCa')
     .addToUi();
 }
