@@ -494,6 +494,15 @@
   function demHau(p) { var n = 0; conHien(p).forEach(function (c) { n += 1 + demHau(c); }); return n; }
 
   function khung() { return { width: svg.clientWidth, height: svg.clientHeight }; }
+  /* Đo khung nhìn thật (iPhone app ngoài màn hình chính tính 100vh gồm cả thanh giờ/pin) → app co giãn theo đúng máy đang dùng */
+  function doKhungNhin() {
+    var r = document.documentElement.style;
+    r.setProperty('--rong', innerWidth + 'px');
+    r.setProperty('--cao', innerHeight + 'px');
+  }
+  doKhungNhin();
+  window.addEventListener('resize', doKhungNhin);
+  window.addEventListener('orientationchange', function () { setTimeout(doKhungNhin, 300); });
   /* Nút "Xem ngang": xoay phả đồ 90° chiếm cả màn hình (dùng được cả khi iPhone khoá xoay) */
   var XOAY = false;
   function datXoay(b) {

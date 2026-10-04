@@ -532,7 +532,7 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
   #tab-phado { padding: 0; }
   .thanh-duoi {
     left: auto; right: calc(8px + env(safe-area-inset-right)); top: 50%; bottom: auto; transform: translateY(-50%);
-    width: 64px; height: min(330px, calc(100vh - 24px)); grid-template-columns: 1fr; grid-template-rows: repeat(5, 1fr);
+    width: 64px; height: min(330px, calc(var(--cao, 100vh) - 24px)); grid-template-columns: 1fr; grid-template-rows: repeat(5, 1fr);
     padding: 4px; border-radius: 22px; border: 1px solid var(--kinh-vien);
   }
   .chi-bao { left: 4px; right: 4px; top: 4px; bottom: auto; width: auto; height: calc((100% - 8px) / 5); transform: translateY(calc(var(--i, 0) * 100%)) !important; }
@@ -574,11 +574,11 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
 
 /* XEM NGANG BẰNG NÚT: phả đồ xoay 90° phủ cả màn hình, ẩn thanh trên/dưới */
 .xoay-ngang .khung-cay {
-  position: fixed; inset: auto; top: 0; left: 100vw; width: 100vh; height: 100vw; z-index: 40;
+  position: fixed; inset: auto; top: 0; left: var(--rong, 100vw); width: var(--cao, 100vh); height: var(--rong, 100vw); z-index: 40;
   transform-origin: top left; transform: rotate(90deg); background: transparent;
 }
 /* hình nền (rồng phượng, lưỡng long…) xoay theo phả đồ, không bị che */
-.xoay-ngang .hoa-van { inset: auto; top: 0; left: 100vw; width: 100vh; height: 100vw; transform-origin: top left; transform: rotate(90deg); }
+.xoay-ngang .hoa-van { inset: auto; top: 0; left: var(--rong, 100vw); width: var(--cao, 100vh); height: var(--rong, 100vw); transform-origin: top left; transform: rotate(90deg); }
 html.xoay-ngang[data-nen="luonglong"] .hoa-van { background-size: cover !important; background-repeat: no-repeat !important; }
 .xoay-ngang .dau, .xoay-ngang .dai-chu, .xoay-ngang .thanh-duoi, .xoay-ngang .bang-gio, .xoay-ngang .bang-mau { visibility: hidden; }
 .xoay-ngang .dieu-khien { top: auto; bottom: calc(16px + env(safe-area-inset-left)); right: calc(18px + env(safe-area-inset-bottom)); flex-direction: row; }
