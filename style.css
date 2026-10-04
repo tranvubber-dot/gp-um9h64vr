@@ -681,3 +681,11 @@ html[data-nen="luonglong"] { --nen: #f3dca2; --blob1: #f0c870; --blob2: #ffe7b0;
 html[data-nen="luonglong"] .nen-loang, html[data-nen="rongphuong"] .nen-loang { opacity: .5; }
 .ds-nen { grid-template-columns: repeat(auto-fill, minmax(66px, 1fr)); }
 .mau-nen[data-nen="rongphuong"] { background-color: #3a0c0c; background-size: 120% !important; }
+/* Lưỡng long: thu nhỏ cho thấy trọn hình rồng, lặp theo chiều dọc */
+html[data-nen="luonglong"] .hoa-van { background-size: 100% auto !important; background-repeat: repeat-y !important; background-position: center top !important; }
+@media (min-aspect-ratio: 3/2) { html[data-nen="luonglong"] .hoa-van { background-size: cover !important; background-repeat: no-repeat !important; } }
+.khung-to { filter: drop-shadow(0 6px 10px rgba(80, 40, 0, .35)); }
+.ios .khung-to { filter: none; }
+/* Giao diện cố định sáng/tối: màu thẻ theo giao diện, không theo chế độ tối của máy */
+html[data-nen="luonglong"] { --ns1: #edfaf1; --ns2: #d3f1dd; --nsv: #9fd8b1; --nv1: #f3f2f5; --nv2: #dfdde4; --nvv: #b8b4c0; --bong-the: rgba(110, 70, 20, .14); }
+html[data-nen="rongphuong"], html[data-nen="sonmai"] { --ns1: #1d3a2a; --ns2: #14301f; --nsv: #2f6b46; --nv1: #2c2b31; --nv2: #232228; --nvv: #4d4a55; }

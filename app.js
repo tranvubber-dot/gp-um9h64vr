@@ -300,6 +300,7 @@
 
   /* =================== PHẢ ĐỒ =================== */
   var CW = 196, CH = 78, SG = 18, HG = 22, RH = 140;
+  var KHUNG_W = 100, KHUNG_H = 137; // khung ảnh thờ mạ vàng đặt trên thẻ cụ Thủy tổ
   var thuGon = new Set(doc('thugon', []));
   var V = { x: 0, y: 0, k: 1 }, chonId = null;
   var svg = $('#cay'), G = $('#cayG');
@@ -337,6 +338,18 @@
     var lop = 'the ' + (p.gioi === 'nu' ? 'nu' : 'nam') + (p.daMat ? ' mat' : '') + (p.dauRe ? ' dr' : '') + (p.id === chonId ? ' chon' : '') + (p.id === TOI ? ' toi' : '');
     var g = el('g', { 'class': lop, 'data-id': p.id, transform: 'translate(' + x + ',' + y + ')' }, cha);
     var vo = el('g', { 'class': 'vo' }, g);
+    if (p === DB.thuyTo) { // ảnh thờ trong khung vàng, dựng trên thẻ
+      var fx = (CW - KHUNG_W) / 2, fy = -KHUNG_H + 16, wx = fx + KHUNG_W * 0.223, wy = fy + KHUNG_H * 0.157, ww = KHUNG_W * 0.546, wh = KHUNG_H * 0.688;
+      var kt = el('g', { 'class': 'khung-to' }, vo);
+      var cp = el('clipPath', { id: 'cKhungTo' }, kt); el('rect', { x: wx, y: wy, width: ww, height: wh }, cp);
+      el('rect', { x: wx, y: wy, width: ww, height: wh, fill: p.gioi === 'nu' ? 'url(#gNu)' : 'url(#gNam)' }, kt);
+      var cc = chu(kt, wx + ww / 2, wy + wh / 2 + 12, tenGoi(p).charAt(0).toUpperCase(), 'chu-cai'); cc.setAttribute('text-anchor', 'middle'); cc.style.fontSize = '34px';
+      if (p.anh) {
+        var ia = el('image', { x: wx, y: wy, width: ww, height: wh, 'clip-path': 'url(#cKhungTo)', preserveAspectRatio: 'xMidYMid slice' }, kt);
+        ia.addEventListener('error', function () { thuLaiAnh(ia, function () { ia.remove(); }); }); ia.setAttribute('href', p.anh);
+      }
+      el('image', { x: fx, y: fy, width: KHUNG_W, height: KHUNG_H, href: 'nen/khung-to.webp' }, kt);
+    }
     // bóng mềm giả (2 lớp, không dùng filter để kéo thả mượt)
     el('rect', { 'class': 'bong2', x: -2, y: 4, width: CW + 4, height: CH + 4, rx: 22 }, vo);
     el('rect', { 'class': 'bong1', x: 0, y: 2.5, width: CW, height: CH + 1, rx: 20 }, vo);
@@ -439,7 +452,7 @@
       el('rect', { x: minX - 112, y: y - 14, width: 64, height: 28, rx: 14 }, nd);
       chu(nd, minX - 80, y + 4.5, 'Đời ' + d, '').setAttribute('text-anchor', 'middle');
     }
-    G._bien = { x0: minX - 122, x1: maxX + 30, y0: -30, y1: (maxDoi - 1) * RH + CH + 40 };
+    G._bien = { x0: minX - 122, x1: maxX + 30, y0: DB.thuyTo ? -30 - KHUNG_H + 16 : -30, y1: (maxDoi - 1) * RH + CH + 40 };
     if (!veCay._da) { veCay._da = true; svg.classList.add('cay-moi'); setTimeout(function () { svg.classList.remove('cay-moi'); }, 1600);
       G.querySelectorAll('.the .vo').forEach(function (v) { var d = DB.byId[v.parentNode.getAttribute('data-id')].doi; v.style.animationDelay = Math.min(d * 70, 700) + 'ms'; }); }
     if (!giuViTri) requestAnimationFrame(vuaKhung);
@@ -475,7 +488,7 @@
       var tam = (TOI && DB.byId[TOI] && DB.byId[TOI]._x != null) ? DB.byId[TOI] : DB.thuyTo;
       if (tam && tam._x != null) {
         k = Math.min(0.75, r.width / (CW * 2.2));
-        V.k = k; V.x = r.width / 2 - (tam._x + CW / 2) * k; V.y = (tam === DB.thuyTo ? 70 : r.height / 2.6) - (tam._y + CH / 2) * k; apV(); return;
+        V.k = k; V.x = r.width / 2 - (tam._x + CW / 2) * k; V.y = (tam === DB.thuyTo ? 70 + (KHUNG_H - 16) * k : r.height / 2.6) - (tam._y + CH / 2) * k; apV(); return;
       }
     }
     var nx = (r.width - w * k) / 2 - b.x0 * k, ny = 20 + Math.max(0, (r.height - 40 - h * k) / 2) - b.y0 * k;
