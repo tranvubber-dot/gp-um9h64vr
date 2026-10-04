@@ -415,8 +415,11 @@
       vc.forEach(function (s, i) {
         var sx = p._x + (i + 1) * (CW + SG);
         veThe(s, sx, p._y, lopThe); s._x = sx; s._y = p._y;
-        el('line', { 'class': 'noi-vc', x1: sx - SG - 2, y1: p._y + CH / 2, x2: sx + 2, y2: p._y + CH / 2 }, lopNoi);
-        el('circle', { cx: sx - SG / 2, cy: p._y + CH / 2, r: 3.5, fill: 'var(--kim)' }, lopNoi);
+        var vy = p._y + CH / 2, vx1 = sx - SG - 2, vx2 = sx + 2;
+        el('line', { 'class': 'noi-bong', x1: vx1, y1: vy, x2: vx2, y2: vy }, lopNoi);
+        el('line', { 'class': 'noi-vc', x1: vx1, y1: vy, x2: vx2, y2: vy }, lopNoi);
+        el('line', { 'class': 'noi-sang', x1: vx1, y1: vy - 0.6, x2: vx2, y2: vy - 0.6 }, lopNoi);
+        el('circle', { 'class': 'mat-noi', cx: sx - SG / 2, cy: vy, r: 4.5 }, lopNoi);
       });
       var tatCa = conHien(p), kids = thuGon.has(p.id) ? [] : tatCa;
       var ox = vc.length ? p._x + CW + SG / 2 : p._x + CW / 2, oy = p._y + CH;
@@ -428,7 +431,10 @@
         var dich = p.dich && kids.some(function (c) { return c.dich; });
         kids.forEach(function (c, i) { // đường cong mềm từ cha mẹ xuống từng con
           var ty = c._y, d = 'M' + ox + ',' + (oy + 2) + 'C' + ox + ',' + (ym + 10) + ' ' + xs[i] + ',' + (ym - 10) + ' ' + xs[i] + ',' + ty;
-          el('path', { 'class': 'noi' + (c.dich && dich ? ' dich' : ''), d: d }, c.dich && dich ? lopDich : lopNoi);
+          var lop = c.dich && dich ? lopDich : lopNoi; // dây vàng nổi: bóng tối + thân vàng + ánh sáng
+          el('path', { 'class': 'noi-bong', d: d }, lop);
+          el('path', { 'class': 'noi' + (c.dich && dich ? ' dich' : ''), d: d }, lop);
+          el('path', { 'class': 'noi-sang', d: d }, lop);
         });
       }
       if (tatCa.length) {
@@ -715,6 +721,11 @@
     return '<label class="o-sua"><span>Giới tính</span><select data-truong="gioi_tinh" data-cu="' + esc(cu) + '">' +
       ['Nam', 'Nữ'].map(function (g) { return '<option' + (g === cu ? ' selected' : '') + '>' + g + '</option>'; }).join('') + '</select></label>';
   }
+  function oConSong(song, mat, gio) { // gạt "Còn sống": tắt đi mới hiện ô ngày mất, ngày giỗ
+    return '<label class="gat"><input type="checkbox" id="conSong"' + (song ? ' checked' : '') + '><span class="cong-tac"></span><span>Còn sống</span></label>' +
+      '<div id="oMat"' + (song ? ' hidden' : '') + '><div class="hai-o">' + oSua('ngay_mat', 'Năm / ngày mất', mat, 'text', 'VD: 1998') + oSua('ngay_gio', 'Ngày giỗ (âm lịch)', gio, 'text', 'VD: 12/3') + '</div></div>';
+  }
+  function ganConSong() { var c = $('#conSong'); if (c) c.onchange = function () { $('#oMat').hidden = this.checked; }; }
   function oMatMa() {
     return '<label class="o-sua"><span>Mật mã sửa</span><input id="suaMa" type="password" value="' + esc(doc('maSua', '') || '') + '" placeholder="Trưởng họ cấp cho bạn" autocomplete="off"></label>';
   }
@@ -741,8 +752,8 @@
       '<label class="nut chinh chon-anh">📷 Chọn / chụp ảnh<input id="suaFile" type="file" accept="image/*" hidden></label></div>';
     h += '<h4 class="nhom-sua">Thông tin chính</h4>';
     h += oSua('ho_ten', 'Họ và tên', r.ho_ten || p.ten) + oGioi(p.gioi === 'nu' ? 'Nữ' : 'Nam');
-    h += '<div class="hai-o">' + oSua('ngay_sinh', 'Năm / ngày sinh', r.ngay_sinh, 'text', '1958') + oSua('ngay_mat', 'Năm / ngày mất', r.ngay_mat, 'text', 'để trống') + '</div>';
-    h += '<div class="hai-o">' + oSua('ngay_gio', 'Ngày giỗ (âm lịch)', r.ngay_gio, 'text', '12/3') + oSua('thu_tu', 'Con thứ mấy', r.thu_tu, 'number', '1, 2, 3…') + '</div>';
+    h += '<div class="hai-o">' + oSua('ngay_sinh', 'Năm / ngày sinh', r.ngay_sinh, 'text', '1958') + oSua('thu_tu', 'Con thứ mấy', r.thu_tu, 'number', '1, 2, 3…') + '</div>';
+    h += oConSong(!(r.ngay_mat || r.ngay_gio || p.daMat), r.ngay_mat, r.ngay_gio);
     h += '<h4 class="nhom-sua">Quan hệ</h4>';
     h += chonNguoi('ma_cha', 'Cha', cha, nam, id, cha === '?' ? 'Ô Cha trong Sheet đang ghi sai, chọn lại giúp.' : '');
     h += chonNguoi('ma_me', 'Mẹ', me, nu, id, me === '?' ? 'Ô Mẹ trong Sheet đang ghi sai, chọn lại giúp.' : (p.me && !me ? 'App đang tự hiểu mẹ là ' + esc(DB.byId[p.me].ten) + ' (vợ duy nhất của cha).' : ''));
@@ -758,6 +769,7 @@
     h += '<div class="hang-nut" style="margin-top:14px"><button class="nut chinh" id="nutLuuSua">Lưu lên gia phả</button><button class="nut" data-di="huySua">Huỷ</button></div>';
     $('#noiDungNgan').innerHTML = h;
     $('#nganKeo').scrollTop = 0;
+    ganConSong();
     $('#suaFile').onchange = function () {
       var f = this.files && this.files[0]; if (!f) return;
       thuNhoAnh(f, 1000).then(function (du) { ANH_MOI = du; $('#suaXem').innerHTML = '<img src="' + du + '" alt="">'; })
@@ -779,12 +791,13 @@
     if (laCon && vc.length > 1) h += '<label class="o-sua"><span>Con với</span><select id="themBan">' + vc.map(function (s) { return '<option value="' + esc(s) + '">' + esc(DB.byId[s].ten) + '</option>'; }).join('') + '</select></label>';
     h += oSua('ho_ten', 'Họ và tên', '', 'text', laCon ? 'Trần Văn …' : '');
     h += oGioi(laCon ? 'Nam' : (p.gioi === 'nu' ? 'Nam' : 'Nữ'));
-    h += '<div class="hai-o">' + oSua('ngay_sinh', 'Năm / ngày sinh', '', 'text', '1990') + oSua('ngay_mat', 'Năm / ngày mất', '', 'text', 'để trống') + '</div>';
-    h += oSua('ngay_gio', 'Ngày giỗ (âm lịch)', '', 'text', 'chỉ khi đã mất, ví dụ 12/3');
+    h += oSua('ngay_sinh', 'Năm / ngày sinh', '', 'text', '1990');
+    h += oConSong(true, '', '');
     h += oMatMa();
     h += '<div class="hang-nut" style="margin-top:14px"><button class="nut chinh" id="nutLuuSua">＋ Thêm vào gia phả</button><button class="nut" data-di="huySua">' + (vuaThem ? 'Xong' : 'Huỷ') + '</button></div>';
     $('#noiDungNgan').innerHTML = h;
     $('#nganKeo').scrollTop = 0;
+    ganConSong();
     var oTen = $('#noiDungNgan [data-truong="ho_ten"]'), oGt = $('#noiDungNgan [data-truong="gioi_tinh"]');
     oTen.oninput = function () { if (/\sthị\s/i.test(' ' + this.value + ' ')) oGt.value = 'Nữ'; };
     setTimeout(function () { oTen.focus(); }, 350);
@@ -809,6 +822,7 @@
     var truong = {}, co = !!ANH_MOI && !them;
     $('#noiDungNgan').querySelectorAll('[data-truong]').forEach(function (i) {
       var v = i.value.trim(), cu = i.getAttribute('data-cu') || '';
+      if (/^ngay_(mat|gio)$/.test(i.dataset.truong) && $('#conSong') && $('#conSong').checked) v = ''; // còn sống → không có ngày mất/giỗ
       var laSua = !them || them === 'ho';
       if (v === cu && laSua) return;
       if (!laSua && !v) return;
