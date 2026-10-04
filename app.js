@@ -725,7 +725,10 @@
     return '<label class="gat"><input type="checkbox" id="conSong"' + (song ? ' checked' : '') + '><span class="cong-tac"></span><span>Còn sống</span></label>' +
       '<div id="oMat"' + (song ? ' hidden' : '') + '><div class="hai-o">' + oSua('ngay_mat', 'Năm / ngày mất', mat, 'text', 'VD: 1998') + oSua('ngay_gio', 'Ngày giỗ (âm lịch)', gio, 'text', 'VD: 12/3') + '</div></div>';
   }
-  function ganConSong() { var c = $('#conSong'); if (c) c.onchange = function () { $('#oMat').hidden = this.checked; }; }
+  function ganConSong() {
+    var c = $('#conSong'); if (!c) return;
+    c.onchange = function () { $('#oMat').hidden = this.checked; var l = $('#oLienHe'); if (l) l.hidden = !this.checked; };
+  }
   function oMatMa() {
     return '<label class="o-sua"><span>Mật mã sửa</span><input id="suaMa" type="password" value="' + esc(doc('maSua', '') || '') + '" placeholder="Trưởng họ cấp cho bạn" autocomplete="off"></label>';
   }
@@ -762,9 +765,12 @@
     h += '<h4 class="nhom-sua">Thêm</h4>';
     h += '<label class="o-sua"><span>Tiểu sử</span><textarea data-truong="tieu_su" data-cu="' + esc(p.tieuSu || '') + '" rows="5" placeholder="Học hành, công việc, kỷ niệm…">' + esc(p.tieuSu || '') + '</textarea></label>';
     h += '<div class="hai-o">' + oSua('que_quan', 'Quê quán', p.queQuan) + oSua('chuc_danh', 'Học vị, chức danh', p.chucDanh) + '</div>';
+    var songCu = !(r.ngay_mat || r.ngay_gio || p.daMat);
+    h += '<div id="oLienHe"' + (songCu ? '' : ' hidden') + '><h4 class="nhom-sua">Liên lạc</h4>';
     h += '<div class="hai-o">' + oSua('dien_thoai', 'Điện thoại', L.dienThoai, 'tel', '09…') + oSua('zalo', 'Zalo (số)', L.zalo, 'tel', '') + '</div>';
     h += oSua('facebook', 'Facebook', L.facebook, 'url', 'link hoặc tên tài khoản') + oSua('noi_o', 'Nơi ở', p.noiO, 'text', '');
-    if (!LH && !p.daMat) h += '<p class="phu" style="margin:-4px 2px 10px">Liên lạc đang ẩn (chưa nhập mã gia đình). Ô nào để trống sẽ giữ nguyên như cũ.</p>';
+    if (!LH) h += '<p class="phu" style="margin:-4px 2px 10px">Liên lạc đang ẩn (chưa nhập mã gia đình). Ô nào để trống sẽ giữ nguyên như cũ.</p>';
+    h += '</div>';
     h += oMatMa();
     h += '<div class="hang-nut" style="margin-top:14px"><button class="nut chinh" id="nutLuuSua">Lưu lên gia phả</button><button class="nut" data-di="huySua">Huỷ</button></div>';
     $('#noiDungNgan').innerHTML = h;
@@ -826,6 +832,10 @@
       var laSua = !them || them === 'ho';
       if (v === cu && laSua) return;
       if (!laSua && !v) return;
+      var daMat = $('#conSong') && !$('#conSong').checked;
+      if (!them && daMat && /^(dien_thoai|zalo|facebook|noi_o)$/.test(i.dataset.truong)) { // đã mất → xoá liên lạc
+        if (cu || !LH) { truong[i.dataset.truong] = ''; co = true; } return;
+      }
       if (!them && !v && !LH && /^(dien_thoai|zalo|facebook)$/.test(i.dataset.truong)) return; // liên lạc đang ẩn: trống = giữ nguyên
       if (i.dataset.truong === 'ho_ten') { v = v.replace(/\s+/g, ' ').toUpperCase(); if (v === cu.toUpperCase() && laSua) return; }
       truong[i.dataset.truong] = v; co = true;
