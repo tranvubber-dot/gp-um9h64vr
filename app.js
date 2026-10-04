@@ -167,20 +167,21 @@
     }
     var khoa = doc('khoa', null), cu = khoa ? doc('dulieu', null) : null;
     if (!khoa) return Promise.reject({ canLink: true });
-    var moi = fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ k: khoa }) })
+    var moi = fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ k: khoa, ve: doc('ve', null) }) })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function (d) {
         if (d && d.loi === 'can_link') throw { canLink: true };
+        if (d && d.loi === 'can_dang_nhap') throw { canDangNhap: true };
         if (!d || !d.nguoi) throw new Error(d && d.loi || 'Dữ liệu không đúng dạng');
         delete d.ok; d.taiLuc = Date.now(); ghi('dulieu', d); return d;
       });
     if (cu && !epMoi) { // hiện ngay bản đã lưu, cập nhật ngầm
       moi.then(function (d) { if (JSON.stringify(d.nguoi) !== JSON.stringify(cu.nguoi) || JSON.stringify(d.thongTin) !== JSON.stringify(cu.thongTin)) { RAW = d; dungLai(); bao('Đã cập nhật dữ liệu mới'); } })
-        .catch(function (e) { if (e && e.canLink) khoaApp(true); });
+        .catch(function (e) { if (e && e.canLink) khoaApp(true); else if (e && e.canDangNhap) moDangNhap(); });
       return Promise.resolve(cu);
     }
     return moi.catch(function (e) {
-      if (e && e.canLink) throw e;
+      if (e && (e.canLink || e.canDangNhap)) throw e;
       if (cu) { bao('Không tải được dữ liệu mới, đang dùng bản đã lưu'); return cu; }
       throw e;
     });
@@ -784,17 +785,20 @@
     var truong = {}, co = !!ANH_MOI && !them;
     $('#noiDungNgan').querySelectorAll('[data-truong]').forEach(function (i) {
       var v = i.value.trim(), cu = i.getAttribute('data-cu') || '';
-      if (v === cu && !them) return;
-      if (them && !v) return;
+      var laSua = !them || them === 'ho';
+      if (v === cu && laSua) return;
+      if (!laSua && !v) return;
       if (!them && !v && !LH && /^(dien_thoai|zalo|facebook)$/.test(i.dataset.truong)) return; // liên lạc đang ẩn: trống = giữ nguyên
       truong[i.dataset.truong] = v; co = true;
     });
-    if (them && !truong.ho_ten) { bao('Nhập họ và tên'); $('#noiDungNgan [data-truong="ho_ten"]').focus(); return; }
+    if (them && them !== 'ho' && !truong.ho_ten) { bao('Nhập họ và tên'); $('#noiDungNgan [data-truong="ho_ten"]').focus(); return; }
     if (!co) { bao('Chưa thay đổi gì'); return; }
     var chu = nut.textContent;
     nut.disabled = true; nut.textContent = ANH_MOI && !them ? 'Đang tải ảnh lên…' : 'Đang lưu…';
-    var body = them ? { k: doc('khoa', null), lenh: 'them', maSua: ma, truong: truong, quanHe: them }
+    var body = them === 'ho' ? { k: doc('khoa', null), lenh: 'suaHo', maSua: ma, truong: truong }
+      : them ? { k: doc('khoa', null), lenh: 'them', maSua: ma, truong: truong, quanHe: them }
       : { k: doc('khoa', null), lenh: 'sua', maSua: ma, ma: id, truong: truong };
+    body.ve = doc('ve', null);
     if (ANH_MOI && !them) body.anh = ANH_MOI;
     fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
       .then(function (r) { return r.json(); })
@@ -807,6 +811,7 @@
           ['dien_thoai', 'zalo', 'facebook', 'noi_o'].forEach(function (k) { if (k in truong) x[k] = truong[k]; });
           ghi('lienhe', LH);
         }
+        if (them === 'ho') { bao('Đã lưu gốc gác dòng họ ✓'); return taiDuLieu(true).then(function (m) { RAW = m; dungLai(true); moGocGac(); }); }
         bao(them ? 'Đã thêm ' + truong.ho_ten + ' ✓' : 'Đã lưu lên gia phả ✓');
         var moi = them ? d.ma : id;
         return taiDuLieu(true).then(function (m) { RAW = m; dungLai(true); if (DB.byId[moi]) { moChiTiet(moi); canhGiua(moi, true); } });
@@ -1106,7 +1111,7 @@
       LH = MAU_RIENG; ghi('lienhe', LH); dungLai(true); bao('Đã mở khoá liên lạc'); return;
     }
     bao('Đang kiểm tra mã…');
-    fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ k: doc('khoa', null), ma: ma }) })
+    fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ k: doc('khoa', null), ve: doc('ve', null), ma: ma }) })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d || !d.ok) { bao(d && d.loi || 'Sai mã gia đình'); return; }
@@ -1131,7 +1136,7 @@
       '<dt>Giữ lâu dài</dt><dd id="luuLauDai">Đang kiểm tra…</dd>' +
       '<dt>Phiên bản app</dt><dd>' + esc(PB || '?') + '</dd>' +
       '</dl>' +
-      '<div class="hang-nut"><button class="nut" id="taiLaiApp">↻ Tải lại app và dữ liệu mới nhất</button></div>' +
+      '<div class="hang-nut"><button class="nut" id="taiLaiApp">↻ Tải lại app và dữ liệu mới nhất</button>' + (doc('ve', null) ? '<button class="nut" id="dangXuat">Đăng xuất</button>' : '') + '</div>' +
       (doc('khoa', null) ? '<div class="hang-nut"><button class="nut chinh" id="guiLinkHo">Gửi link gia phả cho người trong họ</button></div>' : '') +
       '<div class="hang-nut"><button class="nut" id="layLinkKP">Lấy link khôi phục của tôi</button></div>' +
       '<p class="phu">Lưu link này vào Ghi chú hoặc gửi Zalo cho chính mình. Lỡ xoá app hay đổi điện thoại, mở link là app nhớ lại bạn là ai và cách xem. Link không chứa số điện thoại hay mã gia đình (mã thì nhập lại một lần).</p>';
@@ -1140,6 +1145,7 @@
       else $('#luuLauDai').textContent = 'Bình thường';
     } catch (e) {}
     $('#soPB').textContent = PB || '?';
+    var dx = $('#dangXuat'); if (dx) dx.onclick = function () { if (confirm('Đăng xuất khỏi gia phả trên máy này?')) { ghi('ve', null); ghi('dulieu', null); location.reload(); } };
     $('#nutCapNhatApp').onclick = $('#taiLaiApp').onclick = function () {
       bao('Đang tải bản mới nhất…');
       var xong = function () { location.reload(); };
@@ -1282,8 +1288,183 @@
     if (!k) { bao('Link chưa đúng. Hãy dán nguyên link được gửi.'); return; }
     ghi('khoa', k); bao('Đang mở…'); setTimeout(function () { location.reload(); }, 300);
   };
+  /* ---------- Đăng nhập "Bạn là ai, con ai?" (khi trưởng họ bật bắt đăng nhập) ---------- */
+  function moDangNhap() {
+    $('#dangTai').hidden = true;
+    var m = $('#manDangNhap');
+    if (!m) {
+      m = document.createElement('div'); m.className = 'hoi-toi'; m.id = 'manDangNhap';
+      m.innerHTML = '<div class="hop-toi kinh"><div>' +
+        '<div class="an-trien lon" aria-hidden="true">陳</div><h2>Bạn là ai trong dòng họ?</h2>' +
+        '<p class="phu">🔒 Chỉ con cháu có tên trong gia phả mới vào được. Trả lời 2 câu là app tự nhận ra bạn.</p>' +
+        '<form id="formDN" class="form-dn">' +
+        '<label class="o-sua"><span>Tên của bạn</span><input id="dnTen" placeholder="VD: Chính, hoặc Trần Đình Chính" autocomplete="off" autocapitalize="words"></label>' +
+        '<label class="o-sua"><span>Bạn là con của ai? <small class="phu">(dâu/rể: gõ tên vợ/chồng)</small></span><input id="dnCon" placeholder="VD: Liêm" autocomplete="off" autocapitalize="words"></label>' +
+        '<label class="o-sua" id="dnNamO" hidden><span>Năm sinh của bạn</span><input id="dnNam" inputmode="numeric" placeholder="VD: 1985"></label>' +
+        '<button class="nut chinh" type="submit" id="dnNut" style="width:100%;margin-top:6px">Vào gia phả</button></form>' +
+        '<p class="phu" id="dnLoi" style="margin-top:10px"></p></div></div>';
+      document.body.appendChild(m);
+      $('#formDN').onsubmit = function (e) {
+        e.preventDefault();
+        var ten = $('#dnTen').value.trim(), con = $('#dnCon').value.trim();
+        if (!ten || !con) { $('#dnLoi').textContent = 'Gõ cả tên bạn và tên cha/mẹ.'; return; }
+        var nut = $('#dnNut'); nut.disabled = true; nut.textContent = 'Đang tìm bạn trong gia phả…'; $('#dnLoi').textContent = '';
+        fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ k: doc('khoa', null), lenh: 'dangNhap', ten: ten, conAi: con, namSinh: $('#dnNam').value.trim() }) })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (d && d.ok) { ghi('ve', d.ve); ghi('toi', d.ma); ghi('boQuaToi', null); bao('Chào ' + d.ten + '!'); setTimeout(function () { location.reload(); }, 600); return; }
+            if (d && d.loi === 'can_link') { khoaApp(true); return; }
+            if (d && d.trung) $('#dnNamO').hidden = false;
+            $('#dnLoi').textContent = (d && d.loi) || 'Chưa vào được, thử lại.';
+            nut.disabled = false; nut.textContent = 'Vào gia phả';
+          })
+          .catch(function () { $('#dnLoi').textContent = 'Không kết nối được. Kiểm tra mạng.'; nut.disabled = false; nut.textContent = 'Vào gia phả'; });
+      };
+    }
+    m.hidden = false;
+    setTimeout(function () { var i = $('#dnTen'); if (i) i.focus(); }, 300);
+  }
+
+  /* ---------- Gốc gác dòng họ (bấm vào tên dòng họ ở đầu app) ---------- */
+  function moGocGac() {
+    if (!DB) return;
+    var tt = DB.thongTin || {}, tt0 = DB.thuyTo, chu = '';
+    chu += '<div class="ct-dau"><div class="an-trien" aria-hidden="true">陳</div><div><h3>' + esc(tt.ten_dong_ho || 'Gia phả') + '</h3><p class="phu">Gốc gác dòng họ</p></div></div>';
+    chu += '<div class="the-so nho">' + [[DB.list.length, 'người'], [DB.soDoi, 'đời'], [DB.chiList.length, 'chi']].map(function (x) { return '<div class="kinh"><b>' + x[0] + '</b><span>' + x[1] + '</span></div>'; }).join('') + '</div>';
+    chu += '<dl class="bang-tt">' + dong('Quê gốc', esc(tt.que_goc)) + (tt0 ? dong('Cụ Thủy tổ', '<span class="lien-ket" data-mo-nguoi="' + esc(tt0.id) + '">' + esc(tt0.ten) + '</span>' + (chuNam(tt0) ? ' <span class="phu">(' + esc(chuNam(tt0)) + ')</span>' : '')) : '') + '</dl>';
+    chu += '<div class="muc-ct"><h4>Nguồn gốc / phả ký</h4><div class="tieu-su">' + (doan(tt.pha_ky) || '<p class="phu">Chưa có. Người có mật mã sửa có thể viết ngay ở nút dưới.</p>') + '</div></div>';
+    if (tt.nha_tho_ho || tt.ban_do_nha_tho) chu += '<div class="muc-ct"><h4>Nhà thờ họ</h4><p>' + esc(tt.nha_tho_ho || '') + (tt.ban_do_nha_tho ? '<br><a class="lien-ket" target="_blank" rel="noopener" href="' + esc(laLink(tt.ban_do_nha_tho) ? tt.ban_do_nha_tho : 'https://maps.google.com/?q=' + encodeURIComponent(tt.ban_do_nha_tho)) + '">Mở bản đồ chỉ đường</a>' : '') + '</p></div>';
+    if (tt.toc_uoc) chu += '<div class="muc-ct"><h4>Tộc ước</h4><div class="tieu-su">' + doan(tt.toc_uoc) + '</div></div>';
+    if (!LA_MAU) chu += '<button class="nut-sua" id="suaGocGac" style="margin-top:14px"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>Viết / sửa gốc gác dòng họ</button>';
+    $('#noiDungNgan').innerHTML = chu; $('#noiDungNgan').dataset.id = '';
+    var n = $('#nganKeo'); n.classList.add('mo'); n.setAttribute('aria-hidden', 'false'); n.scrollTop = 0;
+    $('#manChe').hidden = window.innerWidth >= 900;
+    var s = $('#suaGocGac'); if (s) s.onclick = suaGocGac;
+    $('#noiDungNgan').querySelectorAll('[data-mo-nguoi]').forEach(function (x) { x.onclick = function () { moChiTiet(x.getAttribute('data-mo-nguoi')); }; });
+  }
+  function suaGocGac() {
+    var tt = DB.thongTin || {}, vb = function (k, nhan, goiY, dong) {
+      return '<label class="o-sua"><span>' + nhan + '</span><textarea data-truong="' + k + '" data-cu="' + esc(tt[k] || '') + '" rows="' + dong + '" placeholder="' + esc(goiY) + '">' + esc(tt[k] || '') + '</textarea></label>';
+    };
+    var h = '<div class="ct-dau"><div class="an-trien" aria-hidden="true">陳</div><div><h3>Sửa gốc gác dòng họ</h3><p class="phu">Lưu xong, ai mở app cũng thấy.</p></div></div>';
+    h += oSua('ten_dong_ho', 'Tên dòng họ', tt.ten_dong_ho, 'text', 'VD: Họ Trần Đình') + oSua('que_goc', 'Quê gốc', tt.que_goc, 'text', 'Thôn, xã, huyện, tỉnh');
+    h += vb('pha_ky', 'Nguồn gốc / phả ký', 'Cụ Thủy tổ từ đâu đến, lập nghiệp ở đâu, những ai có công với họ…', 8);
+    h += oSua('nha_tho_ho', 'Nhà thờ họ (địa chỉ)', tt.nha_tho_ho) + oSua('ban_do_nha_tho', 'Link Google Maps nhà thờ họ', tt.ban_do_nha_tho, 'url', 'https://maps.app.goo.gl/…');
+    h += vb('toc_uoc', 'Tộc ước', 'Ngày giỗ Tổ, quy ước của họ…', 4);
+    h += oMatMa() + '<div class="hang-nut" style="margin-top:14px"><button class="nut chinh" id="nutLuuSua">Lưu</button><button class="nut" id="huyGocGac">Huỷ</button></div>';
+    $('#noiDungNgan').innerHTML = h; $('#nganKeo').scrollTop = 0;
+    $('#huyGocGac').onclick = moGocGac;
+    $('#nutLuuSua').onclick = function () { luuSua('', this, 'ho'); };
+  }
+  $('#dauChu').onclick = moGocGac;
+  $('#dauChu').onkeydown = function (e) { if (e.key === 'Enter') moGocGac(); };
+
+  /* ---------- Dải chữ chạy: đạo làm con, đạo làm cha mẹ, đạo làm người ---------- */
+  var LOI_HAY = [
+    'Công cha như núi Thái Sơn, nghĩa mẹ như nước trong nguồn chảy ra. (Ca dao)',
+    'Uống nước nhớ nguồn – cây có cội, nước có nguồn, người có tổ có tông.',
+    'Đạo làm con (ý kinh Thi Ca La Việt): phụng dưỡng cha mẹ, làm tròn bổn phận, giữ gìn gia phong, sống xứng đáng, lo hương khói khi cha mẹ khuất.',
+    'Đạo làm cha mẹ (ý kinh Thi Ca La Việt): ngăn con điều ác, khuyên con điều thiện, cho con học hành nghề nghiệp, lo con yên bề gia thất.',
+    'Hiếu thảo với cha mẹ khi còn sống là ruộng phước lớn nhất của đời người.',
+    'Hận thù không dập tắt được hận thù; chỉ có tình thương mới dập tắt được. (Ý kinh Pháp Cú)',
+    'Năm giới làm người: không sát sinh, không trộm cắp, không tà dâm, không nói dối, không say sưa.',
+    'Gieo nhân lành, gặt quả lành. Nói lời ái ngữ, làm việc lợi người.',
+    'Anh em như thể tay chân – thương người như thể thương thân.',
+    'Một điều nhịn, chín điều lành. Một câu niệm Phật, trăm mối bình an.',
+    'Mùa Vu Lan báo hiếu: nhớ ơn cha mẹ, ông bà, tổ tiên – những người cho ta hình hài và nề nếp.',
+    'Thời gian cha mẹ ở bên ta là có hạn. Hãy gọi về nhà, hỏi han một câu hôm nay.'
+  ];
+  (function () {
+    var i = Math.floor(Math.random() * LOI_HAY.length), sp = $('#chuChay');
+    var giam = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function chay() {
+      sp.textContent = LOI_HAY[i % LOI_HAY.length]; i++;
+      if (giam) { sp.style.animation = 'none'; setTimeout(chay, 9000); return; } // không chạy chữ: đổi câu mỗi 9 giây
+      sp.style.animation = 'none'; void sp.offsetWidth;
+      var w = sp.parentNode.clientWidth, cw = sp.scrollWidth, giay = Math.max(9, (w + cw) / 38);
+      sp.style.setProperty('--tu', w + 'px'); sp.style.setProperty('--den', -cw + 'px');
+      sp.style.animation = 'chu-chay ' + giay + 's linear 1 both';
+    }
+    sp.addEventListener('animationend', function () { if (!giam) chay(); });
+    chay();
+  })();
+
+  /* ---------- Nhạc nền Phật giáo nhẹ nhàng: chuông, bát hát, nền trầm (tự tạo bằng Web Audio, không cần file) ---------- */
+  var NHAC = { ctx: null, bat: false, hen: [] };
+  function taoNhac() {
+    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+    var c = new AC(), tong = c.createGain(); tong.gain.value = 0; tong.connect(c.destination);
+    // vang: phản hồi xung tự tạo
+    var vang = c.createConvolver(), dai = c.sampleRate * 4.5, ir = c.createBuffer(2, dai, c.sampleRate);
+    for (var k = 0; k < 2; k++) { var d = ir.getChannelData(k); for (var i = 0; i < dai; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / dai, 3); }
+    vang.buffer = ir; var uot = c.createGain(); uot.gain.value = 0.55; vang.connect(uot); uot.connect(tong);
+    var kho = c.createGain(); kho.gain.value = 0.6; kho.connect(tong); kho.connect(vang);
+    // nền trầm: hai dây Rê – La thở chậm
+    [73.42, 110, 146.83].forEach(function (f, j) {
+      var o = c.createOscillator(), g = c.createGain(), lfo = c.createOscillator(), lg = c.createGain(), lp = c.createBiquadFilter();
+      o.type = j === 2 ? 'sine' : 'triangle'; o.frequency.value = f; lp.type = 'lowpass'; lp.frequency.value = 420;
+      g.gain.value = [0.05, 0.035, 0.012][j]; lfo.frequency.value = 0.05 + j * 0.03; lg.gain.value = g.gain.value * 0.6;
+      lfo.connect(lg); lg.connect(g.gain); o.connect(lp); lp.connect(g); g.connect(kho); o.start(); lfo.start();
+    });
+    return { c: c, tong: tong, kho: kho };
+  }
+  function goBat(n, f, to) { // tiếng bát hát / chuông: các hoạ âm lệch, ngân dài
+    var c = n.c, t = c.currentTime + 0.05;
+    [[1, 1], [2.76, 0.5], [5.4, 0.22], [8.93, 0.1]].forEach(function (h) {
+      [0, 1.3].forEach(function (lech) {
+        var o = c.createOscillator(), g = c.createGain();
+        o.frequency.value = f * h[0] + lech; o.type = 'sine';
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(to * h[1] * 0.5, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 9 / Math.sqrt(h[0]));
+        o.connect(g); g.connect(n.kho); o.start(t); o.stop(t + 10);
+      });
+    });
+  }
+  function goMo(n) { // mõ gỗ: vài tiếng gõ khẽ
+    var c = n.c;
+    for (var i = 0; i < 3; i++) {
+      var t = c.currentTime + 0.1 + i * 0.75, o = c.createOscillator(), g = c.createGain(), bp = c.createBiquadFilter();
+      o.frequency.setValueAtTime(820, t); o.frequency.exponentialRampToValueAtTime(560, t + 0.08);
+      bp.type = 'bandpass'; bp.frequency.value = 700; bp.Q.value = 3;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+      o.connect(bp); bp.connect(g); g.connect(n.kho); o.start(t); o.stop(t + 0.25);
+    }
+  }
+  function lich(n) {
+    var thang = [146.83, 196, 220, 293.66, 329.63, 392];
+    (function vong() {
+      if (!NHAC.bat) return;
+      var r = Math.random();
+      if (r < 0.78) goBat(n, thang[Math.floor(Math.random() * thang.length)], 0.16 + Math.random() * 0.08); else goMo(n);
+      NHAC.hen.push(setTimeout(vong, 7000 + Math.random() * 8000));
+    })();
+  }
+  function batNhac(bat) {
+    NHAC.bat = bat; ghi('nhac', bat ? 1 : 0);
+    $('#nutNhac').classList.toggle('dang', bat); $('#nutNhac').textContent = bat ? '🔔' : '🔕';
+    NHAC.hen.forEach(clearTimeout); NHAC.hen = [];
+    if (bat) {
+      if (!NHAC.ctx) NHAC.ctx = taoNhac();
+      var n = NHAC.ctx; if (!n) { bao('Máy này không phát được nhạc'); return; }
+      n.c.resume(); n.tong.gain.cancelScheduledValues(n.c.currentTime);
+      n.tong.gain.setTargetAtTime(0.9, n.c.currentTime, 1.2);
+      goBat(n, 196, 0.22); lich(n);
+    } else if (NHAC.ctx) {
+      var m = NHAC.ctx; m.tong.gain.setTargetAtTime(0, m.c.currentTime, 0.6);
+      setTimeout(function () { if (!NHAC.bat) m.c.suspend(); }, 2500);
+    }
+  }
+  $('#nutNhac').onclick = function () { batNhac(!NHAC.bat); bao(NHAC.bat ? '🔔 Đã bật nhạc nền' : '🔕 Đã tắt nhạc nền'); };
+  $('#nutNhac').textContent = doc('nhac', 0) ? '🔔' : '🔕';
+  if (doc('nhac', 0)) { // trình duyệt chỉ cho phát sau lần chạm đầu tiên
+    var moNhac = function () { document.removeEventListener('pointerdown', moNhac, true); if (!NHAC.bat) batNhac(true); };
+    document.addEventListener('pointerdown', moNhac, true);
+  }
+
   function batDau() { taiDuLieu().catch(function (e) {
     if (e && e.canLink) { khoaApp(!!doc('khoa', null)); return new Promise(function () {}); }
+    if (e && e.canDangNhap) { moDangNhap(); return new Promise(function () {}); }
     $('#dangTai').hidden = true; bao('Không tải được gia phả (' + (e && e.message || 'lỗi mạng') + '). Kiểm tra mạng rồi mở lại.');
     return new Promise(function () {});
   }).then(function (d) {

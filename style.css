@@ -611,3 +611,19 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
 .hai-o { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .o-sua select { width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--kinh-vien); background: var(--kinh-dam); color: inherit; font: inherit; font-size: 16px; -webkit-appearance: none; appearance: none; }
 .o-sua small.phu { display: block; margin: 5px 2px 0; font-size: 12.5px; }
+
+/* Dải chữ chạy + nút nhạc */
+.dai-chu { position: relative; z-index: 5; display: flex; align-items: center; gap: 6px; margin: 6px 12px 0; padding: 3px 10px 3px 4px; border-radius: 14px; height: 30px; box-sizing: border-box; }
+.nut-nhac { flex: none; width: 26px; height: 24px; border: 0; border-radius: 10px; background: transparent; font-size: 14px; cursor: pointer; opacity: .75; }
+.nut-nhac.dang { opacity: 1; animation: lac-chuong 2.4s ease-in-out infinite; }
+@keyframes lac-chuong { 0%, 100% { transform: rotate(0); } 10% { transform: rotate(12deg); } 20% { transform: rotate(-10deg); } 30% { transform: rotate(0); } }
+.dai-chay { flex: 1; overflow: hidden; white-space: nowrap; -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+#chuChay { display: inline-block; font-size: 12.5px; color: var(--chu2); font-style: italic; will-change: transform; }
+@keyframes chu-chay { from { transform: translateX(var(--tu, 100%)); } to { transform: translateX(var(--den, -100%)); } }
+@media (prefers-reduced-motion: reduce) { #chuChay { white-space: normal; } .dai-chay { white-space: normal; -webkit-mask-image: none; mask-image: none; } }
+.dau-chu { cursor: pointer; min-width: 0; flex: 1; }
+.dau-chu:active { opacity: .7; }
+.the-so.nho { margin: 12px 0; }
+.the-so.nho > div { padding: 10px; }
+.form-dn { margin-top: 14px; text-align: left; }
+@media (orientation: landscape) and (max-height: 520px) { .dai-chu { display: none; } }

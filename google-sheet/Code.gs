@@ -86,7 +86,9 @@ function doPost(e) {
   var cd = chanDo_();
   if (cd.qua) return json_({ ok: false, loi: 'Thử sai quá nhiều lần, đợi 10 phút rồi thử lại' });
   if (!khoaDung_(body.k)) { cd.tang(); return json_({ ok: false, loi: 'can_link' }); }
-  if (body.lenh === 'sua' || body.lenh === 'them') {
+  if (body.lenh === 'dangNhap') return dangNhap_(body, cd);
+  if (batDangNhap_() && !kiemVe_(body.ve)) return json_({ ok: false, loi: 'can_dang_nhap' });
+  if (body.lenh === 'sua' || body.lenh === 'them' || body.lenh === 'suaHo') {
     try { return suaThongTin_(body, cd); }
     catch (err) { console.error('suaThongTin_: ' + err + ' | ' + (err && err.stack)); return json_({ ok: false, loi: 'Lỗi máy chủ: ' + (err && err.message || err) }); }
   }
@@ -146,6 +148,70 @@ function capMaSua() {
   var ma; do { ma = String(Math.floor(100000 + Math.random() * 900000)); } while (aiDuocSua_(ma));
   sh.appendRow([ten, ma, Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm'), 'Xoá dòng này để thu hồi quyền']);
   ui.alert('Đã cấp quyền sửa', 'Mật mã của ' + ten + ':   ' + ma + '\n\nGửi riêng mật mã này cho người đó (Zalo/tin nhắn). Họ nhập 1 lần trên app là sửa được.\nMuốn thu hồi: vào tab "' + TAB_QUYEN + '", xoá dòng của họ.', ui.ButtonSet.OK);
+}
+
+/* ---------- ĐĂNG NHẬP: "Bạn là ai, con ai?" — chỉ người có tên trong bảng mới vào được ----------
+   Bật/tắt bằng menu 🌳 Gia phả → 🔒 Bật / tắt bắt đăng nhập (Script Property BAT_DANG_NHAP). */
+function batDangNhap_() { return PropertiesService.getScriptProperties().getProperty('BAT_DANG_NHAP') === '1'; }
+function biMat_() {
+  var p = PropertiesService.getScriptProperties(), s = p.getProperty('BI_MAT');
+  if (!s) { s = Utilities.getUuid() + Utilities.getUuid(); p.setProperty('BI_MAT', s); }
+  return s;
+}
+function ky_(s) { return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(String(s), biMat_())).replace(/=+$/, '').slice(0, 24); }
+function kiemVe_(ve) { // vé = "T005.<hạn>.<chữ ký>"; người bị xoá khỏi bảng thì vé hết tác dụng
+  var x = String(ve || '').split('.'); if (x.length !== 3) return null;
+  if (ky_(x[0] + '.' + x[1]) !== x[2] || +x[1] < Date.now()) return null;
+  var cache = CacheService.getScriptCache(), k = 've_' + x[0];
+  if (cache.get(k)) return x[0];
+  if (!bang_().dongCua[x[0]]) return null;
+  cache.put(k, '1', 300); return x[0];
+}
+function boDau_(s) {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
+    .toLowerCase().replace(/[^a-z0-9 ]+/g, ' ')
+    .replace(/\b(ong|ba|bac|chu|co|di|cau|mo|thim|anh|chi|em|con|chau|cu|me|bo|cha|ma|tia|u|thay|vo|chong|cua|la|toi|minh)\b/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+function khopTen_(go, ten) { // gõ "Chính" hay "Trần Đình Chính" đều khớp "TRẦN ĐÌNH CHÍNH"
+  go = boDau_(go); ten = boDau_(ten);
+  return !!go && (go === ten || (' ' + ten).slice(-(go.length + 1)) === ' ' + go);
+}
+function dangNhap_(body, cd) {
+  var b = bang_(), ten = String(body.ten || '').trim(), conAi = String(body.conAi || '').trim(), nam = String(body.namSinh || '').trim();
+  if (!ten || !conAi) return json_({ ok: false, loi: 'Gõ tên bạn và tên cha/mẹ (hoặc vợ/chồng)' });
+  var cMat = b.cot.indexOf('ngay_mat'), cDm = b.cot.indexOf('da_mat'), cGio = b.cot.indexOf('ngay_gio');
+  var ds = Object.keys(b.dongCua).filter(function (m) {
+    var r = b.v[b.dongCua[m] - 1];
+    if ((cMat >= 0 && r[cMat]) || (cDm >= 0 && r[cDm]) || (cGio >= 0 && r[cGio])) return false; // người đã mất
+    if (!khopTen_(ten, b.tenCua[m])) return false;
+    var than = [maTu_(b.o(m, 'ma_cha')), maTu_(b.o(m, 'ma_me'))].concat(voChongCua_(b, m, null));
+    if (!than.some(function (x) { return x && b.tenCua[x] && khopTen_(conAi, b.tenCua[x]); })) return false;
+    return !nam || String(b.o(m, 'ngay_sinh')).indexOf(nam) >= 0;
+  });
+  if (!ds.length) { cd.tang(); return json_({ ok: false, loi: 'Không tìm thấy bạn trong gia phả. Kiểm tra lại tên, hoặc nhờ trưởng họ thêm bạn vào bảng.' }); }
+  if (ds.length > 1) return json_({ ok: false, trung: true, loi: 'Có ' + ds.length + ' người trùng. Gõ họ tên đầy đủ hoặc thêm năm sinh.' });
+  var ma = ds[0], het = Date.now() + 400 * 864e5;
+  ghiNhatKy_(b.tenCua[ma] + ' (' + ma + ')', 'Đăng nhập app');
+  return json_({ ok: true, ve: ma + '.' + het + '.' + ky_(ma + '.' + het), ma: ma, ten: b.tenCua[ma] });
+}
+/* Menu: bật / tắt bắt đăng nhập */
+function batTatDangNhap() {
+  var ui = SpreadsheetApp.getUi(), p = PropertiesService.getScriptProperties(), dang = batDangNhap_();
+  var r = ui.alert(dang ? 'Đang BẬT bắt đăng nhập' : 'Đang TẮT bắt đăng nhập',
+    dang ? 'Tắt đi thì ai có link là xem được, không cần đăng nhập. Tắt?' :
+      'Bật lên thì mở app phải trả lời "Bạn là ai, con ai?". Chỉ người CÒN SỐNG có tên trong bảng (và có ghi Cha/Mẹ hoặc Vợ/Chồng) mới vào được.\n\nBật?',
+    ui.ButtonSet.YES_NO);
+  if (r !== ui.Button.YES) return;
+  p.setProperty('BAT_DANG_NHAP', dang ? '0' : '1');
+  ui.alert(dang ? 'Đã TẮT bắt đăng nhập.' : 'Đã BẬT. Lần tới mở app, mọi người sẽ được hỏi "Bạn là ai, con ai?".');
+}
+/* Menu: đăng xuất tất cả máy (đổi bí mật ký vé) */
+function dangXuatTatCa() {
+  var ui = SpreadsheetApp.getUi();
+  if (ui.alert('Đăng xuất tất cả', 'Mọi máy sẽ phải đăng nhập lại. Làm?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  PropertiesService.getScriptProperties().deleteProperty('BI_MAT');
+  ui.alert('Xong. Mọi máy sẽ phải đăng nhập lại.');
 }
 
 /* ---------- đọc bảng Người + tra quan hệ ---------- */
@@ -234,6 +300,7 @@ function suaThongTin_(body, cd) {
   var lock = LockService.getDocumentLock(); lock.waitLock(20000);
   try {
     if (body.lenh === 'them') return json_({ ok: true, ma: themNguoi_(body.truong, body.quanHe, ai) });
+    if (body.lenh === 'suaHo') return json_({ ok: true, daSua: suaThongTinHo_(body.truong || {}, ai) });
     var b = bang_(), dong = b.dongCua[String(body.ma || '').trim()];
     if (!dong) return json_({ ok: false, loi: 'Không tìm thấy người này trong Sheet' });
     var daSua = [], linkAnh = '';
@@ -251,6 +318,23 @@ function suaThongTin_(body, cd) {
     if (daSua.length) ghiNhatKy_(ai, 'Sửa ' + b.nhan(body.ma) + ': ' + daSua.join(', '));
     return json_({ ok: true, daSua: daSua, anh: linkAnh });
   } finally { lock.releaseLock(); }
+}
+
+/* Sửa tab "Thông tin" (gốc gác dòng họ) từ app */
+var TT_HO = { ten_dong_ho: 'Tên dòng họ', que_goc: 'Quê gốc', pha_ky: 'Phả ký', toc_uoc: 'Tộc ước', nha_tho_ho: 'Nhà thờ họ', ban_do_nha_tho: 'Bản đồ nhà thờ' };
+function suaThongTinHo_(t, ai) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), sh = ss.getSheetByName(TAB_THONG_TIN);
+  if (!sh) { sh = ss.insertSheet(TAB_THONG_TIN); sh.appendRow(['Mục', 'Nội dung']); }
+  var v = sh.getDataRange().getDisplayValues(), da = [];
+  Object.keys(TT_HO).forEach(function (k) {
+    if (!(k in t)) return;
+    var gt = String(t[k] == null ? '' : t[k]).slice(0, 20000), dong = -1;
+    for (var i = 1; i < v.length; i++) if (khoa_(v[i][0]) === k) { dong = i + 1; break; }
+    if (dong < 0) { sh.appendRow([TT_HO[k], gt]); } else sh.getRange(dong, 2).setValue(gt);
+    da.push(TT_HO[k]);
+  });
+  if (da.length) ghiNhatKy_(ai, 'Sửa gốc gác dòng họ: ' + da.join(', '));
+  return da;
 }
 
 /* Chọn Cha (hoặc Mẹ) trên Sheet → tự điền người còn lại (nếu chỉ có 1 vợ/chồng) và "Con thứ" */
@@ -283,7 +367,7 @@ function themTuForm(f) {
   try {
     var t = { ho_ten: f.ho_ten, gioi_tinh: f.gioi_tinh, ngay_sinh: f.ngay_sinh, ngay_mat: f.ngay_mat, ngay_gio: f.ngay_gio };
     Object.keys(t).forEach(function (k) { if (!t[k]) delete t[k]; });
-    var ai = Session.getActiveUser().getEmail() || 'Sửa trên Sheet';
+    var ai = 'Biểu mẫu trên Sheet';
     return themNguoi_(t, { loai: f.loai, goc: f.goc, banDoi: f.banDoi }, ai);
   } finally { lock.releaseLock(); }
 }
@@ -525,6 +609,9 @@ function onOpen() {
     .addSeparator()
     .addItem('🔑 Đặt mật mã quản trị của tôi', 'datMaSua')
     .addItem('👤 Cấp mật mã sửa cho người khác', 'capMaSua')
+    .addSeparator()
+    .addItem('🔒 Bật / tắt bắt đăng nhập', 'batTatDangNhap')
+    .addItem('🚪 Đăng xuất tất cả máy', 'dangXuatTatCa')
     .addToUi();
 }
 
