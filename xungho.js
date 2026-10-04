@@ -1,4 +1,4 @@
-/* Tính xưng hô giữa hai người trong họ (cách gọi miền Bắc).
+/* Tính xưng hô giữa hai người trong họ (tính theo cách gọi phổ thông, rồi đổi sang tiếng Hà Tĩnh nếu chọn).
    XungHo.goi(db, aId, bId) → { tu: 'chú', giaiThich: '...', duong: [ids] }  (A gọi B là gì)
    db: { byId: {id: người}, laHuyetThong(p), soSanhVai(x, y) > 0 nếu x vai trên y } */
 (function (G) {
@@ -116,7 +116,7 @@
 
   function ten(db, id) { return db.byId[id].ten; }
 
-  function goi(db, A, B, _sau) {
+  function goiPT(db, A, B, _sau) {
     var a = db.byId[A], b = db.byId[B];
     if (!a || !b) return null;
     if (A === B) return { tu: 'chính mình', giaiThich: '' };
@@ -147,7 +147,7 @@
     // A là dâu/rể: gọi theo vợ/chồng
     var vcA = (a.voChong || []);
     for (var j = 0; j < vcA.length; j++) {
-      var r2 = goi(db, vcA[j], B, true) || goiQuaDauRe(db, vcA[j], B);
+      var r2 = goiPT(db, vcA[j], B, true) || goiQuaDauRe(db, vcA[j], B);
       if (r2) return { tu: r2.tu, giaiThich: a.ten + ' gọi theo ' + (laNam(a) ? 'vợ' : 'chồng') +
         ' là ' + ten(db, vcA[j]) + '. ' + (r2.giaiThich || ''), duong: [A].concat(r2.duong || []) };
     }
@@ -167,5 +167,23 @@
     return null;
   }
 
-  G.XungHo = { goi: goi, toChung: toChung };
+  /* Đổi cách gọi phổ thông sang tiếng Hà Tĩnh (Nghệ Tĩnh) */
+  var CUM_HT = [['chú (dượng)', 'dượng'], ['cụ ông', 'ông cố'], ['cụ bà', 'bà cố'], ['kỵ ông', 'ông kỵ'], ['kỵ bà', 'bà kỵ']];
+  var TU_HT = { 'bố': 'bọ', 'mẹ': 'mạ', 'anh': 'eng', 'chị': 'ả', 'cô': 'o', 'mợ': 'mự', 'cụ': 'cố' };
+  function doiHT(s) {
+    if (!s || /^cụ tổ/.test(s)) return s;
+    CUM_HT.forEach(function (c) { s = s.split(c[0]).join(c[1]); });
+    return s.split(' ').map(function (w) { return TU_HT[w] || w; }).join(' ');
+  }
+  function goi(db, A, B) {
+    var r = goiPT(db, A, B);
+    if (!r || XH.vung !== 'hatinh') return r;
+    var tu = doiHT(r.tu);
+    if (tu !== r.tu) r.tuPT = r.tu;
+    r.tu = tu;
+    if (r.giaiThich) r.giaiThich = r.giaiThich.replace(/gọi là ([^)]+)\)/, function (m, t) { return 'gọi là ' + doiHT(t) + ')'; });
+    return r;
+  }
+
+  var XH = G.XungHo = { goi: goi, toChung: toChung, doiHT: doiHT, vung: 'hatinh' };
 })(typeof window !== 'undefined' ? window : globalThis);

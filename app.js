@@ -1033,9 +1033,16 @@
     $('#xhB').value = DB.byId[giuB] ? giuB : (macB || DB.thuyTo || DB.list[0]).id;
     tinhXH();
   }
+  window.XungHo.vung = doc('xhVung', 'hatinh'); // 'hatinh' = tiếng Hà Tĩnh, 'pt' = phổ thông
+  $('#xhVung').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-vung]'); if (!b) return;
+    window.XungHo.vung = b.getAttribute('data-vung'); ghi('xhVung', window.XungHo.vung);
+    tinhXungToi(); veCay(true); tinhXH();
+  });
   var XH_CD = doc('xhCheDo', 'toi'); // 'toi' = tôi gọi người khác, 'hai' = hai người bất kỳ
   function apCheDoXH() {
     var cd = (XH_CD === 'toi' && TOI && DB.byId[TOI]) ? 'toi' : (XH_CD === 'toi' ? 'can-chon' : 'hai');
+    document.querySelectorAll('#xhVung button').forEach(function (b) { b.classList.toggle('chon', b.getAttribute('data-vung') === window.XungHo.vung); });
     document.querySelectorAll('#xhCheDo button').forEach(function (b) { b.classList.toggle('chon', b.getAttribute('data-cd') === XH_CD); });
     var toi = $('#xhToi');
     if (cd === 'toi') {
@@ -1049,7 +1056,7 @@
       $('#xhMoTa').textContent = 'Hãy cho app biết bạn là ai trước, rồi chọn người muốn hỏi.';
       $('#xhNhanB').firstChild.textContent = 'Người bạn muốn hỏi';
     } else {
-      $('#xhMoTa').textContent = 'Chọn hai người bất kỳ trong họ, app cho biết hai người gọi nhau là gì (theo cách gọi miền Bắc).';
+      $('#xhMoTa').textContent = 'Chọn hai người bất kỳ trong họ, app cho biết hai người gọi nhau là gì.';
       $('#xhNhanB').firstChild.textContent = 'Người thứ hai';
     }
     toi.hidden = cd === 'hai';
@@ -1075,14 +1082,16 @@
     function the(x, y, r) {
       var nguoiNghe = cd === 'toi' && y.id === TOI ? 'bạn' : '<b>' + esc(y.ten) + '</b>';
       return '<div class="the-xh kinh"><div class="ai"><b>' + esc(ten(x)) + '</b> gọi ' + nguoiNghe + ' là</div><div class="tu">' +
-        esc(r.tu || '—') + '</div></div>';
+        esc(r.tu || '—') + '</div>' + (r.tuPT ? '<div class="tu-pt">phổ thông: ' + esc(r.tuPT) + '</div>' : '') + '</div>';
     }
     var h = the(A, B, r1) + the(B, A, r2);
     if (r1.giaiThich) h += '<p class="phu" style="text-align:center">' + esc(r1.giaiThich) + '</p>';
     if (r1.duong && r1.duong.length > 2) {
       h += '<div class="duong-xh">' + r1.duong.map(function (i, k) { return '<b' + (k === 0 || k === r1.duong.length - 1 ? ' class="ga"' : '') + ' data-mo="' + esc(i) + '">' + esc(DB.byId[i].ten) + '</b>'; }).join('<span>→</span>') + '</div>';
     }
-    h += '<p class="phu" style="text-align:center;font-size:12.5px">Cách gọi theo miền Bắc. "Bác" là anh chị của bố/mẹ, "chú/cô" là em bên nội, "cậu/dì" là em bên ngoại. Họ hàng xa xét theo vai (thứ bậc chi), không xét tuổi.</p>';
+    h += (window.XungHo.vung === 'hatinh'
+      ? '<p class="phu" style="text-align:center;font-size:12.5px">Cách gọi vùng Hà Tĩnh: bọ = bố, mạ = mẹ, eng = anh, ả = chị, o = cô (chị em gái của bọ), dượng = chồng của o/dì, mự = vợ của cậu, ông cố/bà cố = cụ. "Bác" là anh chị của bọ/mạ, "chú/o" là em bên nội, "cậu/dì" là em bên ngoại. Họ hàng xa xét theo vai (thứ bậc chi), không xét tuổi.</p>'
+      : '<p class="phu" style="text-align:center;font-size:12.5px">Cách gọi phổ thông. "Bác" là anh chị của bố/mẹ, "chú/cô" là em bên nội, "cậu/dì" là em bên ngoại. Họ hàng xa xét theo vai (thứ bậc chi), không xét tuổi.</p>');
     $('#xhKQ').innerHTML = h;
   }
   $('#xhA').addEventListener('change', tinhXH);
