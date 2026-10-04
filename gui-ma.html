@@ -32,9 +32,12 @@ a.nut, button { display: block; width: 100%; text-align: center; padding: 14px; 
   var q = {}; location.hash.slice(1).split('&').forEach(function (x) { var i = x.indexOf('='); if (i > 0) q[x.slice(0, i)] = decodeURIComponent(x.slice(i + 1)); });
   var sdt = (q.s || '').replace(/[^\d+]/g, ''), ma = (q.m || '').replace(/\D/g, ''), ten = q.t || '';
   var app = location.href.replace(/gui-ma\.html.*$/, '');
-  var nd = 'Mã đăng nhập Gia phả con cháu Ông Trần Đình Đối' + (ten ? ' của ' + ten : '') + ': ' + ma + '\nMở app: ' + app + '\nChọn "Số điện thoại", gõ số ' + sdt + ' và mã trên.';
+  var loai = q.loai || 'dn';
+  var nd = loai === 'dn'
+    ? 'Mã đăng nhập Gia phả con cháu Ông Trần Đình Đối' + (ten ? ' của ' + ten : '') + ': ' + ma + '\nMở app: ' + app + '\nChọn "Số điện thoại", gõ số ' + sdt + ' và mã trên.'
+    : 'Mật mã ' + (loai === 'tin' ? 'đăng thông báo' : 'chỉnh sửa') + ' Gia phả con cháu Ông Trần Đình Đối' + (ten ? ' của ' + ten : '') + ': ' + ma + '\nMở app: ' + app + '\nKhi ' + (loai === 'tin' ? 'đăng tin ở Bảng tin' : 'sửa thông tin, thêm người') + ', gõ mã này vào ô "Mật mã sửa".';
   document.getElementById('tieuDe').textContent = ten ? 'Gửi mã cho ' + ten : 'Gửi mã đăng nhập';
-  document.getElementById('soDt').textContent = 'Số điện thoại: ' + sdt;
+  document.getElementById('soDt').textContent = sdt ? 'Số điện thoại: ' + sdt : (loai === 'tin' ? 'Mã đăng thông báo' : loai === 'sua' ? 'Mật mã chỉnh sửa' : '');
   document.getElementById('ma').textContent = ma;
   document.getElementById('noiDung').textContent = nd;
   document.getElementById('nutSms').href = 'sms:' + sdt + (/iPhone|iPad|Mac/.test(navigator.userAgent) ? '&' : '?') + 'body=' + encodeURIComponent(nd);
@@ -44,7 +47,7 @@ a.nut, button { display: block; width: 100%; text-align: center; padding: 14px; 
     else { var t = document.createElement('textarea'); t.value = nd; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) {} t.remove(); ok(); }
   }
   document.getElementById('nutChep').onclick = function () { chep(); };
-  document.getElementById('nutZalo').onclick = function () { chep(function () { setTimeout(function () { location.href = 'https://zalo.me/' + sdt.replace(/^\+?84/, '0'); }, 500); }); };
+  document.getElementById('nutZalo').onclick = function () { chep(function () { setTimeout(function () { location.href = sdt ? 'https://zalo.me/' + sdt.replace(/^\+?84/, '0') : 'https://zalo.me/'; }, 500); }); };
   try { history.replaceState(null, '', location.pathname); } catch (e) {} // không để mã nằm trên thanh địa chỉ
 })();
 </script>

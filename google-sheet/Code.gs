@@ -89,7 +89,13 @@ function doPost(e) {
   if (body.lenh === 'dangNhap') return dangNhap_(body, cd);
   if (body.lenh === 'dangNhapSdt') return dangNhapSdt_(body, cd);
   if (body.lenh === 'layMaDN') return layMaDN_(body, cd);
+  if (body.lenh === 'dangNhapGoogle') return dangNhapGoogle_(body, cd);
   if (batDangNhap_() && !kiemVe_(body.ve)) return json_({ ok: false, loi: 'can_dang_nhap' });
+  if (body.lenh === 'quanTri') {
+    var em = kiemVeQT_(body.veQT); if (!em) return json_({ ok: false, loi: 'can_quan_tri' });
+    try { return json_(Object.assign({ ok: true }, quanTri_(body, em))); } catch (err) { return json_({ ok: false, loi: String(err && err.message || err) }); }
+  }
+  if (body.lenh === 'khoa') { datKhoa_(String(body.ma || ''), !!body.khoa); ghiNhatKy_(kiemVeQT_(body.veQT) ? 'Quản trị' : 'Người dùng', (body.khoa ? 'Khoá' : 'Mở khoá') + ' thông tin ' + body.ma); return json_({ ok: true, khoa: dsKhoa_() }); }
   if (body.lenh === 'sua' || body.lenh === 'them' || body.lenh === 'suaHo' || body.lenh === 'dangTin') {
     try { return suaThongTin_(body, cd); }
     catch (err) { console.error('suaThongTin_: ' + err + ' | ' + (err && err.stack)); return json_({ ok: false, loi: 'Lỗi máy chủ: ' + (err && err.message || err) }); }
@@ -98,7 +104,7 @@ function doPost(e) {
   if (body.ma == null) { // lấy cây gia phả (không có phần riêng tư)
     var d = docSheet_();
     var tb = []; try { tb = docThongBao_(); } catch (e) {}
-    return json_({ ok: true, thongTin: d.thongTin, nguoi: d.cong, thongBao: tb, capNhat: new Date().toISOString() });
+    return json_({ ok: true, thongTin: d.thongTin, nguoi: d.cong, thongBao: tb, khoa: dsKhoa_(), capNhat: new Date().toISOString() });
   }
   var ma = PropertiesService.getScriptProperties().getProperty('MA_GIA_DINH');
   if (!ma) return json_({ ok: false, loi: 'Ban quản trị chưa đặt mã gia đình' });
@@ -124,6 +130,22 @@ function aiDuocSua_(ma) {
   var v = sh.getRange(2, 1, sh.getLastRow() - 1, 2).getDisplayValues();
   for (var i = 0; i < v.length; i++) if (String(v[i][1]).trim() === ma) return String(v[i][0]).trim() || 'Người được cấp';
   return null;
+}
+function loaiQuyen_(ma) { // 'tin' nếu mã chỉ được đăng tin
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_QUYEN);
+  if (!sh || sh.getLastRow() < 2) return 'sua';
+  var v = sh.getRange(2, 1, sh.getLastRow() - 1, 4).getDisplayValues();
+  for (var i = 0; i < v.length; i++) if (String(v[i][1]).trim() === String(ma).trim()) return /tin/i.test(v[i][3]) ? 'tin' : 'sua';
+  return 'sua';
+}
+function capMaSuaTab_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), sh = ss.getSheetByName(TAB_QUYEN);
+  if (sh) return sh;
+  sh = ss.insertSheet(TAB_QUYEN); sh.getRange('B:B').setNumberFormat('@');
+  sh.appendRow(['Người được cấp', 'Mật mã', 'Cấp lúc', 'Loại quyền']); sh.setFrozenRows(1);
+  sh.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#6E56CF').setFontColor('#FFFFFF');
+  sh.setColumnWidth(1, 220); sh.setColumnWidth(2, 110); sh.setColumnWidth(3, 140); sh.setColumnWidth(4, 140);
+  return sh;
 }
 function ghiNhatKy_(ai, viec) {
   var ss = SpreadsheetApp.getActiveSpreadsheet(), sh = ss.getSheetByName(TAB_NHAT_KY);
@@ -367,6 +389,88 @@ function dangTin_(t, ai) {
   ghiNhatKy_(ai, 'Đăng tin: ' + hang[2]);
 }
 
+/* ---------- QUẢN TRỊ bằng Gmail (tab "Quản trị") + khoá thông tin từng người ---------- */
+var GOOGLE_CLIENT_ID = '555347045162-b5eikhv6uuq0952s6hjh84t460cdga97.apps.googleusercontent.com';
+var TAB_QT = 'Quản trị';
+function soQuanTri_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), sh = ss.getSheetByName(TAB_QT);
+  if (sh) return sh;
+  sh = ss.insertSheet(TAB_QT);
+  sh.getRange(1, 1, 1, 3).setValues([['Gmail quản trị', 'Tên', 'Ghi chú']]).setFontWeight('bold').setBackground('#1F4E79').setFontColor('#FFFFFF');
+  sh.setFrozenRows(1); sh.setColumnWidth(1, 260); sh.setColumnWidth(2, 200); sh.setColumnWidth(3, 280);
+  sh.getRange('A1').setNote('Gmail ghi ở đây đăng nhập Google trong app là có quyền quản trị: cấp/thu hồi mã, chặn đăng nhập, sửa mọi thứ. Xoá dòng = thu hồi.');
+  var chu = ''; try { chu = Session.getEffectiveUser().getEmail(); } catch (e) {}
+  if (chu) sh.appendRow([chu, 'Người lập gia phả', 'Chủ sở hữu']);
+  return sh;
+}
+function laQuanTri_(email) {
+  email = String(email || '').trim().toLowerCase(); if (!email) return false;
+  var sh = soQuanTri_(); if (sh.getLastRow() < 2) return false;
+  return sh.getRange(2, 1, sh.getLastRow() - 1, 1).getDisplayValues().some(function (r) { return String(r[0]).trim().toLowerCase() === email; });
+}
+function kiemVeQT_(v) { // vé quản trị = "<email base64>.<hạn>.<chữ ký>"
+  var x = String(v || '').split('.'); if (x.length !== 3) return null;
+  if (ky_('qt|' + x[0] + '.' + x[1]) !== x[2] || +x[1] < Date.now()) return null;
+  var email = Utilities.newBlob(Utilities.base64DecodeWebSafe(x[0])).getDataAsString();
+  var cache = CacheService.getScriptCache(), k = 'qt_' + x[0], c = cache.get(k);
+  if (c) return c === '1' ? email : null;
+  var ok = laQuanTri_(email); cache.put(k, ok ? '1' : '0', 120);
+  return ok ? email : null;
+}
+function dangNhapGoogle_(body, cd) {
+  var r = UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(String(body.idToken || '')), { muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) return json_({ ok: false, loi: 'Đăng nhập Google không hợp lệ, thử lại.' });
+  var t = JSON.parse(r.getContentText());
+  if (t.aud !== GOOGLE_CLIENT_ID || String(t.email_verified) !== 'true') return json_({ ok: false, loi: 'Đăng nhập Google không hợp lệ.' });
+  if (!laQuanTri_(t.email)) { cd.tang(); return json_({ ok: false, loi: 'Gmail ' + t.email + ' chưa được cấp quyền quản trị.' }); }
+  var e64 = Utilities.base64EncodeWebSafe(String(t.email).toLowerCase()).replace(/=+$/, ''), het = Date.now() + 180 * 864e5;
+  ghiNhatKy_('Quản trị: ' + t.email, 'Đăng nhập quản trị bằng Google');
+  return json_({ ok: true, veQT: e64 + '.' + het + '.' + ky_('qt|' + e64 + '.' + het), email: t.email, ten: t.name || '' });
+}
+/* Chạy 1 lần trong trình soạn (chọn hàm này → ▶ Chạy) để Google xin quyền kiểm tra đăng nhập Google + tạo tab "Quản trị" */
+function capQuyenQuanTri() {
+  soQuanTri_();
+  UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?id_token=x', { muteHttpExceptions: true });
+  Logger.log('Đã sẵn sàng. Gmail quản trị: ' + soQuanTri_().getRange('A2').getDisplayValue());
+}
+/* Khoá thông tin từng người (công tắc, không cần mã): lưu ở Script Property KHOA_NGUOI */
+function dsKhoa_() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('KHOA_NGUOI') || '{}'); } catch (e) { return {}; } }
+function datKhoa_(ma, khoa) { var d = dsKhoa_(); if (khoa) d[ma] = 1; else delete d[ma]; PropertiesService.getScriptProperties().setProperty('KHOA_NGUOI', JSON.stringify(d)); }
+/* API trang Quản trị trong app (cần vé quản trị) */
+function quanTri_(body, email) {
+  var lock = LockService.getDocumentLock(); lock.waitLock(20000);
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet(), ai = 'Quản trị: ' + email;
+    if (body.viec === 'capMa') {
+      var ten = String(body.ten || '').trim(); if (!ten) throw new Error('Gõ tên người được cấp');
+      var loai = body.loai === 'tin' ? 'Chỉ đăng tin' : 'Chỉnh sửa';
+      var sh = ss.getSheetByName(TAB_QUYEN) || (capMaSuaTab_(), ss.getSheetByName(TAB_QUYEN)), ma;
+      do { ma = String(Math.floor(100000 + Math.random() * 900000)); } while (aiDuocSua_(ma));
+      sh.appendRow([ten, ma, Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm'), loai]);
+      ghiNhatKy_(ai, 'Cấp mã ' + loai.toLowerCase() + ' cho ' + ten);
+      return { ma: ma, loai: loai };
+    }
+    if (body.viec === 'thuHoi') {
+      var sq = ss.getSheetByName(TAB_QUYEN); if (!sq || sq.getLastRow() < 2) return {};
+      var v = sq.getRange(2, 1, sq.getLastRow() - 1, 2).getDisplayValues();
+      for (var i = v.length - 1; i >= 0; i--) if (String(v[i][1]).trim() === String(body.ma)) { sq.deleteRow(i + 2); ghiNhatKy_(ai, 'Thu hồi mã của ' + v[i][0]); }
+      return {};
+    }
+    if (body.viec === 'chan') {
+      var d = dongDangNhap_(String(body.ma)); if (!d) throw new Error('Không thấy người này trong tab Đăng nhập');
+      soDangNhap_().getRange(d, 6).setValue(body.chan ? 'Chặn' : 'Cho phép');
+      CacheService.getScriptCache().remove('chan_' + body.ma);
+      ghiNhatKy_(ai, (body.chan ? 'Chặn' : 'Mở') + ' đăng nhập ' + body.ma);
+      return {};
+    }
+    // mặc định: danh sách
+    try { dongBoDangNhap_(); } catch (e) {}
+    var q = ss.getSheetByName(TAB_QUYEN), dsQ = q && q.getLastRow() > 1 ? q.getRange(2, 1, q.getLastRow() - 1, 4).getDisplayValues().map(function (r) { return { ten: r[0], ma: r[1], cap: r[2], loai: /tin/i.test(r[3]) ? 'Chỉ đăng tin' : 'Chỉnh sửa' }; }).filter(function (x) { return x.ma; }) : [];
+    var dn = soDangNhap_(), dsD = dn.getLastRow() > 1 ? dn.getRange(2, 1, dn.getLastRow() - 1, COT_DN.length).getDisplayValues().map(function (r) { return { ma: r[0], ten: r[1], sdt: r[2], maDN: r[3], quyen: r[5], lanCuoi: r[7], soLan: r[8] }; }).filter(function (x) { return x.ma; }) : [];
+    return { quyenSua: dsQ, dangNhap: dsD, email: email };
+  } finally { lock.releaseLock(); }
+}
+
 /* ---------- đọc bảng Người + tra quan hệ ---------- */
 function bang_() {
   var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_NGUOI);
@@ -448,10 +552,16 @@ function themNguoi_(t, qh, ai) {
 
 /* App gửi { k, lenh:'sua', maSua, ma, anh?, truong:{…} }  hoặc  { k, lenh:'them', maSua, truong:{…}, quanHe:{ loai, goc, banDoi? } } */
 function suaThongTin_(body, cd) {
-  var coMa = PropertiesService.getScriptProperties().getProperty('MA_SUA') || SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_QUYEN);
-  if (!coMa) return json_({ ok: false, loi: 'Ban quản trị chưa đặt mật mã sửa' });
-  var ai = aiDuocSua_(body.maSua);
-  if (!ai) { cd.tang(); return json_({ ok: false, loi: 'Sai mật mã sửa (hoặc đã bị thu hồi)' }); }
+  var qt = kiemVeQT_(body.veQT), ai = qt ? 'Quản trị: ' + qt : aiDuocSua_(body.maSua), quyen = qt ? 'sua' : (ai ? loaiQuyen_(body.maSua) : '');
+  var maNguoi = String(body.ma || '').trim(), truong = body.truong || {};
+  // Đổi ảnh người CÒN SỐNG, không bị khoá: ai đã đăng nhập cũng làm được, không cần mã
+  if (!ai && body.lenh === 'sua' && body.anh && !Object.keys(truong).length) {
+    var bb = bang_(), conSong = maNguoi && bb.dongCua[maNguoi] && !(bb.o(maNguoi, 'ngay_mat') || bb.o(maNguoi, 'da_mat') || bb.o(maNguoi, 'ngay_gio'));
+    if (conSong && !dsKhoa_()[maNguoi]) { var mv = kiemVe_(body.ve); ai = mv ? (bb.tenCua[mv] || mv) + ' (tự đổi ảnh)' : 'Người xem (tự đổi ảnh)'; quyen = 'anh'; }
+  }
+  if (!ai) { if (body.maSua) cd.tang(); return json_({ ok: false, loi: body.maSua ? 'Sai mật mã sửa (hoặc đã bị thu hồi)' : 'Cần mật mã sửa (hoặc đăng nhập quản trị)' }); }
+  if (quyen === 'tin' && body.lenh !== 'dangTin') return json_({ ok: false, loi: 'Mã của bạn chỉ dùng để đăng thông báo.' });
+  if ((body.lenh === 'sua') && maNguoi && dsKhoa_()[maNguoi] && !qt) return json_({ ok: false, loi: 'Thông tin người này đang khoá. Gạt công tắc mở khoá rồi sửa.' });
   var lock = LockService.getDocumentLock(); lock.waitLock(20000);
   try {
     if (body.lenh === 'them') return json_({ ok: true, ma: themNguoi_(body.truong, body.quanHe, ai) });

@@ -751,7 +751,10 @@
     var c = $('#conSong'); if (!c) return;
     c.onchange = function () { $('#oMat').hidden = this.checked; var l = $('#oLienHe'); if (l) l.hidden = !this.checked; };
   }
-  function oMatMa() {
+  function laQT() { return !!doc('veQT', null); }
+  function oMatMa(tuyChon) {
+    if (laQT()) return '<p class="phu qt-dang" style="margin:6px 2px 4px">🛡️ Bạn đang đăng nhập quản trị — không cần mật mã.</p><input id="suaMa" type="hidden" value="">';
+    if (tuyChon) return '<label class="o-sua"><span>Mật mã sửa <small class="phu">(chỉ đổi ảnh thì không cần)</small></span><input id="suaMa" type="password" value="' + esc(doc('maSua', '') || '') + '" placeholder="Người quản lý gia phả cấp cho bạn" autocomplete="off"></label>';
     return '<label class="o-sua"><span>Mật mã sửa</span><input id="suaMa" type="password" value="' + esc(doc('maSua', '') || '') + '" placeholder="Người quản lý gia phả cấp cho bạn" autocomplete="off"></label>';
   }
   function quanHeCu(id, k) { // mã đang ghi ở dòng này, chỉ khi nó trỏ đúng người (bỏ mã cũ sai)
@@ -773,6 +776,8 @@
     var L = p.lienHe || {}, r = dongGoc(id), nam = function (q) { return q.gioi === 'nam'; }, nu = function (q) { return q.gioi === 'nu'; };
     var cha = quanHeCu(id, 'ma_cha'), me = quanHeCu(id, 'ma_me'), vc = quanHeCu(id, 'ma_vo_chong');
     var h = '<div class="ct-dau">' + cham(p) + '<div><h3>Sửa: ' + esc(p.ten) + '</h3><p class="phu">Lưu xong, ai mở app cũng thấy bản mới.</p></div></div>';
+    var dangKhoa = !!(RAW.khoa && RAW.khoa[id]);
+    if (!p.daMat) h += '<label class="gat khoa-gat"><input type="checkbox" id="gatKhoa"' + (dangKhoa ? ' checked' : '') + '><span class="cong-tac"></span><span>🔒 Khoá thông tin <small class="phu">(chống lỡ tay sửa nhầm)</small></span></label>';
     h += '<div class="sua-anh"><div class="khung-anh" id="suaXem">' + (p.anh ? '<img src="' + esc(p.anh) + '" referrerpolicy="no-referrer" alt="">' : '<span>Chưa có ảnh</span>') + '</div>' +
       '<label class="nut chinh chon-anh">📷 Chọn / chụp ảnh<input id="suaFile" type="file" accept="image/*" hidden></label></div>';
     h += '<h4 class="nhom-sua">Thông tin chính</h4>';
@@ -793,11 +798,23 @@
     h += oSua('facebook', 'Facebook', L.facebook, 'url', 'link hoặc tên tài khoản') + oSua('noi_o', 'Nơi ở', p.noiO, 'text', '');
     if (!LH) h += '<p class="phu" style="margin:-4px 2px 10px">Liên lạc đang ẩn (chưa nhập mã gia đình). Ô nào để trống sẽ giữ nguyên như cũ.</p>';
     h += '</div>';
-    h += oMatMa();
+    h += oMatMa(!p.daMat);
     h += '<div class="hang-nut" style="margin-top:14px"><button class="nut chinh" id="nutLuuSua">Lưu lên gia phả</button><button class="nut" data-di="huySua">Huỷ</button></div>';
     $('#noiDungNgan').innerHTML = h;
     $('#nganKeo').scrollTop = 0;
     ganConSong();
+    var apKhoa = function (k) { // khoá: mọi ô chỉ xem, ẩn nút lưu
+      $('#noiDungNgan').querySelectorAll('[data-truong], #suaFile, #conSong').forEach(function (x) { x.disabled = k; });
+      $('#nutLuuSua').hidden = k; $('#noiDungNgan').classList.toggle('dang-khoa', k);
+    };
+    apKhoa(dangKhoa);
+    var gk = $('#gatKhoa');
+    if (gk) gk.onchange = function () {
+      var k = this.checked; apKhoa(k);
+      fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ k: doc('khoa', null), ve: doc('ve', null), veQT: doc('veQT', null), lenh: 'khoa', ma: id, khoa: k }) })
+        .then(function (r) { return r.json(); }).then(function (d) { if (d && d.ok) { RAW.khoa = d.khoa; bao(k ? '🔒 Đã khoá thông tin' : '🔓 Đã mở khoá'); } else throw 0; })
+        .catch(function () { bao('Không đổi được khoá, thử lại'); gk.checked = !k; apKhoa(!k); });
+    };
     $('#suaFile').onchange = function () {
       var f = this.files && this.files[0]; if (!f) return;
       thuNhoAnh(f, 1000).then(function (du) { ANH_MOI = du; $('#suaXem').innerHTML = '<img src="' + du + '" alt="">'; })
@@ -846,7 +863,6 @@
   }
   function luuSua(id, nut, them) {
     var ma = $('#suaMa').value.trim();
-    if (!ma) { bao('Nhập mật mã sửa (người quản lý cấp)'); $('#suaMa').focus(); return; }
     var truong = {}, co = !!ANH_MOI && !them;
     $('#noiDungNgan').querySelectorAll('[data-truong]').forEach(function (i) {
       var v = i.value.trim(), cu = i.getAttribute('data-cu') || '';
@@ -864,18 +880,20 @@
     });
     if (them && them !== 'ho' && !truong.ho_ten) { bao('Nhập họ và tên'); $('#noiDungNgan [data-truong="ho_ten"]').focus(); return; }
     if (!co) { bao('Chưa thay đổi gì'); return; }
+    if (!ma && !laQT() && !(!them && ANH_MOI && !Object.keys(truong).length && !(DB.byId[id] && DB.byId[id].daMat))) { bao('Nhập mật mã sửa (người quản lý cấp)'); $('#suaMa').focus(); return; }
     var chu = nut.textContent;
     nut.disabled = true; nut.textContent = ANH_MOI && !them ? 'Đang tải ảnh lên…' : 'Đang lưu…';
+    var chiAnh = !them && ANH_MOI && !Object.keys(truong).length;
     var body = them === 'ho' ? { k: doc('khoa', null), lenh: 'suaHo', maSua: ma, truong: truong }
       : them ? { k: doc('khoa', null), lenh: 'them', maSua: ma, truong: truong, quanHe: them }
       : { k: doc('khoa', null), lenh: 'sua', maSua: ma, ma: id, truong: truong };
-    body.ve = doc('ve', null);
+    body.ve = doc('ve', null); body.veQT = doc('veQT', null);
     if (ANH_MOI && !them) body.anh = ANH_MOI;
     fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d || !d.ok) throw new Error(d && d.loi || 'Không lưu được');
-        ghi('maSua', ma);
+        if (ma) ghi('maSua', ma);
         if (body.anh) ANH_TAM[id] = body.anh;
         if (LH && !them) { // cập nhật liên lạc đã mở khoá trên máy này
           var x = LH[id] = LH[id] || {};
@@ -1158,7 +1176,7 @@
       var g = DB.byId[c.goc], n = DB.list.filter(function (p) { return p.chi === c.so && p.huyetThong; }).length;
       return '<li data-chi="' + esc(c.goc) + '"><span class="so">' + esc(c.ten.replace('Chi ', '')) + '</span><div><b>' + esc(c.ten) + '</b> <span class="phu">· ' + esc(c.phu) + '</span><br><span class="phu">Khởi từ ' + esc(g.ten) + ' · ' + n + ' người</span></div></li>';
     }).join('') || '<li class="phu">Chưa chia chi.</li>';
-    veKhoa(); veCaiDat(); veLuuMay();
+    veKhoa(); veCaiDat(); veLuuMay(); veQuanTri();
     var lc = !LA_MAU && RAW.taiLuc ? 'Tải lần cuối: ' + new Date(RAW.taiLuc).toLocaleString('vi-VN') : '';
     $('#capNhatLuc').textContent = lc;
     $('#capNhat').hidden = LA_MAU;
@@ -1197,6 +1215,75 @@
         LH = d.lienHe || {}; ghi('lienhe', LH); dungLai(true); bao('Đã mở khoá liên lạc');
       })
       .catch(function () { bao('Không kết nối được. Thử lại khi có mạng.'); });
+  }
+
+  /* ---------- QUẢN TRỊ: đăng nhập Google (Gmail được chỉ định), cấp/thu hồi mã, chặn đăng nhập ---------- */
+  var QT = { dl: null, tab: 'ma', gis: false };
+  function goiQT(viec, them) {
+    return fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ k: doc('khoa', null), ve: doc('ve', null), veQT: doc('veQT', null), lenh: 'quanTri', viec: viec }, them || {})) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d && d.loi === 'can_quan_tri') { ghi('veQT', null); veQuanTri(); throw new Error('Phiên quản trị hết hạn, đăng nhập Google lại'); } if (!d || !d.ok) throw new Error(d && d.loi || 'Lỗi'); return d; });
+  }
+  function napGIS(xong) {
+    if (window.google && google.accounts && google.accounts.id) return xong();
+    var sc = document.createElement('script'); sc.src = 'https://accounts.google.com/gsi/client'; sc.async = true; sc.onload = xong;
+    sc.onerror = function () { var n = $('#nutGoogle'); if (n) n.textContent = 'Không tải được nút Google. Kiểm tra mạng.'; };
+    document.head.appendChild(sc);
+  }
+  function veQuanTri() {
+    if (LA_MAU || !C.googleClientId) return;
+    var k = $('#khoiQT');
+    if (!k) { k = document.createElement('article'); k.className = 'khoi-chu kinh khoi-qt'; k.id = 'khoiQT'; var neo = $('#chonNen'); neo.insertAdjacentElement('afterend', k); }
+    if (!laQT()) {
+      k.innerHTML = '<h2>🛡️ Quản trị</h2><p class="phu">Dành cho Gmail được chỉ định: cấp mã chỉnh sửa, mã đăng tin, quản lý đăng nhập ngay trên app.</p><div id="nutGoogle" class="nut-google"></div>';
+      napGIS(function () {
+        google.accounts.id.initialize({ client_id: C.googleClientId, callback: function (res) {
+          bao('Đang kiểm tra quyền quản trị…');
+          fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ k: doc('khoa', null), lenh: 'dangNhapGoogle', idToken: res.credential }) })
+            .then(function (r) { return r.json(); })
+            .then(function (d) { if (!d || !d.ok) throw new Error(d && d.loi || 'Không đăng nhập được'); ghi('veQT', d.veQT); ghi('qtEmail', d.email); bao('🛡️ Đã vào quản trị: ' + d.email); veQuanTri(); })
+            .catch(function (e) { bao(e.message || 'Không đăng nhập được'); });
+        } });
+        var n = $('#nutGoogle'); if (n) google.accounts.id.renderButton(n, { theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with', locale: 'vi' });
+      });
+      return;
+    }
+    k.innerHTML = '<h2>🛡️ Quản trị</h2><p class="phu">Đang đăng nhập: <b>' + esc(doc('qtEmail', '')) + '</b> · <span class="lien-ket" id="qtThoat">Đăng xuất quản trị</span></p>' +
+      '<div class="chon-dn qt-tab"><button type="button" data-qt="ma"' + (QT.tab === 'ma' ? ' class="chon"' : '') + '>🔑 Mã chỉnh sửa</button><button type="button" data-qt="dn"' + (QT.tab === 'dn' ? ' class="chon"' : '') + '>📱 Đăng nhập</button></div>' +
+      '<div id="qtNoi"><p class="phu">Đang tải…</p></div>';
+    $('#qtThoat').onclick = function () { ghi('veQT', null); ghi('qtEmail', null); QT.dl = null; veQuanTri(); bao('Đã đăng xuất quản trị'); };
+    k.querySelectorAll('[data-qt]').forEach(function (b) { b.onclick = function () { QT.tab = b.getAttribute('data-qt'); veQuanTri(); }; });
+    var ve = function () {
+      var d = QT.dl, n = $('#qtNoi'); if (!n || !d) return;
+      if (QT.tab === 'ma') {
+        n.innerHTML = '<div class="qt-cap"><input id="qtTen" placeholder="Tên người được cấp (VD: Anh Chính)"><select id="qtLoai"><option value="sua">Chỉnh sửa</option><option value="tin">Chỉ đăng tin</option></select><button class="nut chinh" id="qtCap">Cấp mã</button></div><div id="qtKetQua"></div>' +
+          (d.quyenSua.length ? '<ul class="qt-ds">' + d.quyenSua.map(function (q) {
+            return '<li><div><b>' + esc(q.ten) + '</b><span class="phu">' + esc(q.loai) + ' · ' + esc(q.cap || '') + '</span></div><code>' + esc(q.ma) + '</code><button class="nut nho" data-thuhoi="' + esc(q.ma) + '">Thu hồi</button></li>'; }).join('') + '</ul>' : '<p class="phu">Chưa cấp mã cho ai.</p>');
+        $('#qtCap').onclick = function () {
+          var ten = $('#qtTen').value.trim(), loai = $('#qtLoai').value, nut = this; if (!ten) { bao('Gõ tên người được cấp'); $('#qtTen').focus(); return; }
+          nut.disabled = true;
+          goiQT('capMa', { ten: ten, loai: loai }).then(function (r) {
+            $('#qtKetQua').innerHTML = '<div class="qt-moi"><small>Mã ' + esc(r.loai.toLowerCase()) + ' của ' + esc(ten) + '</small><b>' + esc(r.ma) + '</b><a class="nut chinh" target="_blank" rel="noopener" href="gui-ma.html#loai=' + loai + '&m=' + r.ma + '&t=' + encodeURIComponent(ten) + '">💬 Gửi qua Zalo</a></div>';
+            return goiQT('ds');
+          }).then(function (d2) { QT.dl = d2; var kq = $('#qtKetQua').innerHTML; ve(); $('#qtKetQua').innerHTML = kq; })
+            .catch(function (e) { bao(e.message); }).then(function () { nut.disabled = false; });
+        };
+        n.querySelectorAll('[data-thuhoi]').forEach(function (b) {
+          b.onclick = function () { if (!confirm('Thu hồi mã này? Người đó sẽ không sửa được nữa.')) return; goiQT('thuHoi', { ma: b.getAttribute('data-thuhoi') }).then(function () { return goiQT('ds'); }).then(function (d2) { QT.dl = d2; ve(); bao('Đã thu hồi mã'); }).catch(function (e) { bao(e.message); }); };
+        });
+      } else {
+        n.innerHTML = d.dangNhap.length ? '<p class="phu">Ghi số điện thoại cho ai (sửa thông tin người đó) là người đó có mã đăng nhập.</p><ul class="qt-ds">' + d.dangNhap.map(function (x) {
+          var chan = /chặn/i.test(x.quyen);
+          return '<li class="' + (chan ? 'bi-chan' : '') + '"><div><b>' + esc(x.ten) + '</b><span class="phu">' + esc(x.sdt) + ' · mã ' + esc(x.maDN) + (x.lanCuoi ? ' · dùng ' + esc(x.lanCuoi) : ' · chưa vào') + '</span></div>' +
+            '<label class="gat nho"><input type="checkbox" data-chan="' + esc(x.ma) + '"' + (chan ? '' : ' checked') + '><span class="cong-tac"></span></label></li>'; }).join('') + '</ul><p class="phu">Công tắc xanh = được vào app. Gạt tắt = chặn.</p>'
+          : '<p class="phu">Chưa ai có số điện thoại trong bảng.</p>';
+        n.querySelectorAll('[data-chan]').forEach(function (c) {
+          c.onchange = function () { var chan = !c.checked; goiQT('chan', { ma: c.getAttribute('data-chan'), chan: chan }).then(function () { bao(chan ? 'Đã chặn' : 'Đã cho phép'); c.closest('li').classList.toggle('bi-chan', chan); }).catch(function (e) { bao(e.message); c.checked = !c.checked; }); };
+        });
+      }
+    };
+    if (QT.dl) ve(); else goiQT('ds').then(function (d) { QT.dl = d; ve(); }).catch(function (e) { var n = $('#qtNoi'); if (n) n.innerHTML = '<p class="phu">' + esc(e.message) + '</p>'; });
   }
 
   function veLuuMay() {
@@ -1397,13 +1484,13 @@
       var nut = this, ma = $('#suaMa').value.trim(), tin = { loai: $('#tinLoai').value, tieuDe: $('#tinTieuDe').value.trim(), noiDung: $('#tinNoiDung').value.trim(),
         mucDong: $('#tinDong').hidden ? '' : $('#tinMuc').value.trim(), han: $('#tinDong').hidden ? '' : $('#tinHan').value.trim(), ghim: $('#tinGhim').checked };
       if (!tin.tieuDe) { bao('Nhập tiêu đề'); $('#tinTieuDe').focus(); return; }
-      if (!ma) { bao('Nhập mật mã sửa'); $('#suaMa').focus(); return; }
+      if (!ma && !laQT()) { bao('Nhập mật mã sửa'); $('#suaMa').focus(); return; }
       nut.disabled = true; nut.textContent = 'Đang đăng…';
-      fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ k: doc('khoa', null), ve: doc('ve', null), lenh: 'dangTin', maSua: ma, tin: tin }) })
+      fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ k: doc('khoa', null), ve: doc('ve', null), veQT: doc('veQT', null), lenh: 'dangTin', maSua: ma, tin: tin }) })
         .then(function (r) { return r.json(); })
         .then(function (d) {
           if (!d || !d.ok) throw new Error(d && d.loi || 'Không đăng được');
-          ghi('maSua', ma); bao('Đã đăng thông báo ✓'); dongNgan();
+          if (ma) ghi('maSua', ma); bao('Đã đăng thông báo ✓'); dongNgan();
           return taiDuLieu(true).then(function (m) { RAW = m; dungLai(true); danhDauDaXem(); veBangTin(); });
         })
         .catch(function (e) { bao(e && e.message || 'Không kết nối được'); nut.disabled = false; nut.textContent = 'Đăng lên Bảng tin'; });
