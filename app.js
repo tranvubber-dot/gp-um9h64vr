@@ -1195,7 +1195,7 @@
       '<dt>Giữ lâu dài</dt><dd id="luuLauDai">Đang kiểm tra…</dd>' +
       '<dt>Phiên bản app</dt><dd>' + esc(PB || '?') + '</dd>' +
       '</dl>' +
-      '<div class="hang-nut"><button class="nut" id="taiLaiApp">↻ Tải lại app và dữ liệu mới nhất</button>' + (doc('ve', null) ? '<button class="nut" id="dangXuat">Đăng xuất</button>' : '') + '</div>' +
+      '<div class="hang-nut"><button class="nut" id="taiLaiApp">↻ Tải lại app và dữ liệu mới nhất</button>' + (doc('ve', null) ? '<button class="nut" id="dangXuat">Đăng xuất</button>' : (LA_MAU ? '' : '<button class="nut chinh" id="moDN">📱 Đăng nhập</button>')) + '</div>' +
       (doc('khoa', null) ? '<div class="hang-nut"><button class="nut chinh" id="guiLinkHo">Gửi link gia phả cho người trong họ</button></div>' : '') +
       '<div class="hang-nut"><button class="nut" id="layLinkKP">Lấy link khôi phục của tôi</button></div>' +
       '<p class="phu">Lưu link này vào Ghi chú hoặc gửi Zalo cho chính mình. Lỡ xoá app hay đổi điện thoại, mở link là app nhớ lại bạn là ai và cách xem. Link không chứa số điện thoại hay mã gia đình (mã thì nhập lại một lần).</p>';
@@ -1204,6 +1204,7 @@
       else $('#luuLauDai').textContent = 'Bình thường';
     } catch (e) {}
     $('#soPB').textContent = PB || '?';
+    var mdn = $('#moDN'); if (mdn) mdn.onclick = function () { moDangNhap(true); };
     var dx = $('#dangXuat'); if (dx) dx.onclick = function () { if (confirm('Đăng xuất khỏi gia phả trên máy này?')) { ghi('ve', null); ghi('dulieu', null); location.reload(); } };
     $('#nutCapNhatApp').onclick = $('#taiLaiApp').onclick = function () {
       bao('Đang tải bản mới nhất…');
@@ -1348,41 +1349,66 @@
     ghi('khoa', k); bao('Đang mở…'); setTimeout(function () { location.reload(); }, 300);
   };
   /* ---------- Đăng nhập "Bạn là ai, con ai?" (khi trưởng họ bật bắt đăng nhập) ---------- */
-  function moDangNhap() {
+  function moDangNhap(tuChon) {
     $('#dangTai').hidden = true;
     var m = $('#manDangNhap');
     if (!m) {
       m = document.createElement('div'); m.className = 'hoi-toi'; m.id = 'manDangNhap';
       m.innerHTML = '<div class="hop-toi kinh"><div>' +
-        '<div class="an-trien lon" aria-hidden="true">陳</div><h2>Bạn là ai trong dòng họ?</h2>' +
-        '<p class="phu">🔒 Chỉ con cháu có tên trong gia phả mới vào được. Trả lời 2 câu là app tự nhận ra bạn.</p>' +
-        '<form id="formDN" class="form-dn">' +
+        '<button class="x-dn" id="dongDN" aria-label="Đóng" hidden>×</button>' +
+        '<div class="an-trien lon" aria-hidden="true">陳</div><h2>Đăng nhập gia phả</h2>' +
+        '<p class="phu">🔒 Chỉ con cháu có tên trong gia phả mới vào được. Mã đăng nhập do trưởng họ gửi qua Zalo.</p>' +
+        '<div class="chon-dn" hidden><button type="button" data-dn="sdt" class="chon">📱 Số điện thoại</button><button type="button" data-dn="ten">👪 Bạn là con ai?</button></div>' +
+        '<form id="formSdt" class="form-dn">' +
+        '<label class="o-sua"><span>Số điện thoại của bạn</span><input id="dnSdt" type="tel" inputmode="tel" placeholder="VD: 0943 xxx xxx" autocomplete="tel"></label>' +
+        '<label class="o-sua"><span>Mã đăng nhập <small class="phu">(6 số, trưởng họ nhắn cho bạn)</small></span><input id="dnMa" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code" class="o-ma-dn"></label>' +
+        '<button class="nut chinh" type="submit" style="width:100%;margin-top:6px">Vào gia phả</button></form>' +
+        '<form id="formDN" class="form-dn" hidden>' +
         '<label class="o-sua"><span>Tên của bạn</span><input id="dnTen" placeholder="VD: Chính, hoặc Trần Đình Chính" autocomplete="off" autocapitalize="words"></label>' +
         '<label class="o-sua"><span>Bạn là con của ai? <small class="phu">(dâu/rể: gõ tên vợ/chồng)</small></span><input id="dnCon" placeholder="VD: Liêm" autocomplete="off" autocapitalize="words"></label>' +
         '<label class="o-sua" id="dnNamO" hidden><span>Năm sinh của bạn</span><input id="dnNam" inputmode="numeric" placeholder="VD: 1985"></label>' +
-        '<button class="nut chinh" type="submit" id="dnNut" style="width:100%;margin-top:6px">Vào gia phả</button></form>' +
+        '<button class="nut chinh" type="submit" style="width:100%;margin-top:6px">Vào gia phả</button></form>' +
         '<p class="phu" id="dnLoi" style="margin-top:10px"></p></div></div>';
       document.body.appendChild(m);
-      $('#formDN').onsubmit = function (e) {
-        e.preventDefault();
-        var ten = $('#dnTen').value.trim(), con = $('#dnCon').value.trim();
-        if (!ten || !con) { $('#dnLoi').textContent = 'Gõ cả tên bạn và tên cha/mẹ.'; return; }
-        var nut = $('#dnNut'); nut.disabled = true; nut.textContent = 'Đang tìm bạn trong gia phả…'; $('#dnLoi').textContent = '';
-        fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ k: doc('khoa', null), lenh: 'dangNhap', ten: ten, conAi: con, namSinh: $('#dnNam').value.trim() }) })
+      m.querySelectorAll('[data-dn]').forEach(function (b) {
+        b.onclick = function () {
+          var laSdt = b.getAttribute('data-dn') === 'sdt';
+          m.querySelectorAll('[data-dn]').forEach(function (x) { x.classList.toggle('chon', x === b); });
+          $('#formSdt').hidden = !laSdt; $('#formDN').hidden = laSdt; $('#dnLoi').textContent = '';
+          setTimeout(function () { (laSdt ? $('#dnSdt') : $('#dnTen')).focus(); }, 50);
+        };
+      });
+      $('#dongDN').onclick = function () { m.hidden = true; };
+      var gui = function (body, nut) {
+        var chu = nut.textContent; nut.disabled = true; nut.textContent = 'Đang kiểm tra…'; $('#dnLoi').textContent = '';
+        body.k = doc('khoa', null);
+        fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
           .then(function (r) { return r.json(); })
           .then(function (d) {
             if (d && d.ok) { ghi('ve', d.ve); ghi('toi', d.ma); ghi('boQuaToi', null); bao('Chào ' + d.ten + '!'); setTimeout(function () { location.reload(); }, 600); return; }
             if (d && d.loi === 'can_link') { khoaApp(true); return; }
             if (d && d.trung) $('#dnNamO').hidden = false;
             $('#dnLoi').textContent = (d && d.loi) || 'Chưa vào được, thử lại.';
-            nut.disabled = false; nut.textContent = 'Vào gia phả';
+            nut.disabled = false; nut.textContent = chu;
           })
-          .catch(function () { $('#dnLoi').textContent = 'Không kết nối được. Kiểm tra mạng.'; nut.disabled = false; nut.textContent = 'Vào gia phả'; });
+          .catch(function () { $('#dnLoi').textContent = 'Không kết nối được. Kiểm tra mạng.'; nut.disabled = false; nut.textContent = chu; });
+      };
+      $('#formSdt').onsubmit = function (e) {
+        e.preventDefault();
+        var sdt = $('#dnSdt').value.trim(), ma = $('#dnMa').value.replace(/\D/g, '');
+        if (!sdt || ma.length < 4) { $('#dnLoi').textContent = 'Gõ số điện thoại và mã 6 số.'; return; }
+        gui({ lenh: 'dangNhapSdt', sdt: sdt, maDN: ma }, this.querySelector('button'));
+      };
+      $('#formDN').onsubmit = function (e) {
+        e.preventDefault();
+        var ten = $('#dnTen').value.trim(), con = $('#dnCon').value.trim();
+        if (!ten || !con) { $('#dnLoi').textContent = 'Gõ cả tên bạn và tên cha/mẹ.'; return; }
+        gui({ lenh: 'dangNhap', ten: ten, conAi: con, namSinh: $('#dnNam').value.trim() }, this.querySelector('button'));
       };
     }
+    $('#dongDN').hidden = !tuChon;
     m.hidden = false;
-    setTimeout(function () { var i = $('#dnTen'); if (i) i.focus(); }, 300);
+    setTimeout(function () { var i = $('#dnSdt'); if (i && !$('#formSdt').hidden) i.focus(); }, 300);
   }
 
   /* ---------- Gốc gác dòng họ (bấm vào tên dòng họ ở đầu app) ---------- */

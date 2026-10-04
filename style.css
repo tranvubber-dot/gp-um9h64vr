@@ -722,3 +722,10 @@ html[data-nen="rongphuong"] .noi, html[data-nen="sonmai"] .noi { stroke: #f0b84a
 .lap-lanh { transform-box: fill-box; transform-origin: center; animation: lap-lanh 2.2s ease-in-out infinite; opacity: 0; }
 @keyframes lap-lanh { 0%, 100% { opacity: 0; scale: .3; } 45% { opacity: 1; scale: 1.15; } 60% { opacity: .9; scale: .9; } }
 @media (prefers-reduced-motion: reduce) { .tia-xoay, .quang-to, .lap-lanh { animation: none; } .lap-lanh { opacity: .8; } }
+/* Màn đăng nhập 2 cách */
+.chon-dn { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 14px 0 4px; padding: 4px; border-radius: 14px; background: var(--vach); }
+.chon-dn button { border: 0; border-radius: 11px; padding: 10px 6px; background: transparent; color: var(--chu2); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.chon-dn button.chon { background: var(--kinh-dam); color: var(--chu); box-shadow: 0 2px 8px rgba(0, 0, 0, .12); }
+.o-ma-dn { letter-spacing: .4em; font-weight: 700; text-align: center; }
+.x-dn { position: absolute; right: 12px; top: 12px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: var(--vach); color: var(--chu); font-size: 20px; cursor: pointer; }
+#manDangNhap .hop-toi { position: relative; }

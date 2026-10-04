@@ -87,6 +87,7 @@ function doPost(e) {
   if (cd.qua) return json_({ ok: false, loi: 'Thử sai quá nhiều lần, đợi 10 phút rồi thử lại' });
   if (!khoaDung_(body.k)) { cd.tang(); return json_({ ok: false, loi: 'can_link' }); }
   if (body.lenh === 'dangNhap') return dangNhap_(body, cd);
+  if (body.lenh === 'dangNhapSdt') return dangNhapSdt_(body, cd);
   if (batDangNhap_() && !kiemVe_(body.ve)) return json_({ ok: false, loi: 'can_dang_nhap' });
   if (body.lenh === 'sua' || body.lenh === 'them' || body.lenh === 'suaHo') {
     try { return suaThongTin_(body, cd); }
@@ -169,43 +170,100 @@ function kiemVe_(ve) { // vé = "T005.<hạn>.<chữ ký>"; người bị xoá k
   return x[0];
 }
 
-/* ---------- Tab "Đăng nhập": ai đã vào app, lần cuối dùng, cột Quyền = Cho phép / Chặn ---------- */
-var TAB_DN = 'Đăng nhập';
+/* ---------- Tab "Đăng nhập": mỗi người có SĐT trong bảng được tự cấp 1 mã đăng nhập 6 số ----------
+   Cột: Mã | Họ tên | Điện thoại | Mã đăng nhập | Gửi mã | Quyền | Lần đầu vào | Lần cuối dùng | Số lần */
+var TAB_DN = 'Đăng nhập', COT_DN = ['Mã', 'Họ tên', 'Điện thoại', 'Mã đăng nhập', 'Gửi mã', 'Quyền', 'Lần đầu vào', 'Lần cuối dùng', 'Số lần'];
+var LINK_APP_ = 'https://tranvubber-dot.github.io/gp-um9h64vr/';
+function chuSo_(x) { var d = String(x || '').replace(/\D/g, ''); if (/^84\d{9}$/.test(d)) d = '0' + d.slice(2); return d; }
 function soDangNhap_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet(), sh = ss.getSheetByName(TAB_DN);
-  if (sh) return sh;
+  if (sh && sh.getRange(1, 3).getDisplayValue() === 'Điện thoại') return sh;
+  if (sh) ss.deleteSheet(sh); // bản cũ (chưa có cột SĐT) → làm lại
   sh = ss.insertSheet(TAB_DN);
-  sh.appendRow(['Mã', 'Họ tên', 'Lần đầu vào', 'Lần cuối dùng', 'Số lần đăng nhập', 'Quyền']);
+  sh.getRange('C:D').setNumberFormat('@');
+  sh.getRange(1, 1, 1, COT_DN.length).setValues([COT_DN]).setFontWeight('bold').setBackground('#2E7D5B').setFontColor('#FFFFFF');
   sh.setFrozenRows(1);
-  sh.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#2E7D5B').setFontColor('#FFFFFF');
-  [70, 220, 140, 140, 120, 110].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
-  sh.getRange('F1').setNote('Chọn "Chặn" để khoá người này (bị đăng xuất trong vài phút). Chọn "Cho phép" để mở lại.');
+  [62, 200, 110, 110, 90, 95, 125, 125, 70].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
+  sh.getRange('D1').setNote('Mã tự tạo khi người đó có số điện thoại trong bảng Người. Muốn đổi thì gõ mã mới (6 số).');
+  sh.getRange('E1').setNote('Bấm để mở trang gửi mã: nội dung tự chép sẵn, Zalo mở đúng người — dán rồi gửi.');
+  sh.getRange('F1').setNote('Chọn "Chặn" để khoá người này (bị đăng xuất trong vài phút). "Cho phép" để mở lại.');
   sh.getRange('F2:F1000').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Cho phép', 'Chặn'], true).build());
   return sh;
 }
+function linkGuiMa_(sdt, ma, ten) { // trang nhỏ trong app: nút gửi SMS / Zalo có sẵn nội dung (dữ liệu nằm sau dấu #, không gửi lên máy chủ)
+  return LINK_APP_ + 'gui-ma.html#s=' + sdt + '&m=' + ma + '&t=' + encodeURIComponent(ten || '');
+}
+/* Đồng bộ: ai có SĐT trong bảng Người mà chưa có dòng → thêm dòng + mã 6 số; SĐT đổi → cập nhật */
+function dongBoDangNhap_() {
+  var sh = soDangNhap_(), b = bang_(), cDt = b.cot.indexOf('dien_thoai');
+  if (cDt < 0) return;
+  var n = sh.getLastRow(), v = n > 1 ? sh.getRange(2, 1, n - 1, COT_DN.length).getDisplayValues() : [], dong = {};
+  v.forEach(function (r, i) { if (r[0]) dong[r[0]] = i + 2; });
+  var maDung = {}; v.forEach(function (r) { if (r[3]) maDung[r[3]] = 1; });
+  Object.keys(b.dongCua).forEach(function (m) {
+    var sdt = chuSo_(b.v[b.dongCua[m] - 1][cDt]); if (sdt.length < 9) return;
+    var d = dong[m];
+    if (!d) {
+      var ma; do { ma = String(Math.floor(100000 + Math.random() * 900000)); } while (maDung[ma]); maDung[ma] = 1;
+      sh.appendRow([m, b.tenCua[m], sdt, ma, '', 'Cho phép', '', '', 0]); d = sh.getLastRow();
+      sh.getRange(d, 3, 1, 2).setNumberFormat('@').setValues([[sdt, ma]]);
+    } else {
+      var r = v[d - 2];
+      if (r[2] !== sdt) sh.getRange(d, 3).setNumberFormat('@').setValue(sdt);
+      if (r[1] !== b.tenCua[m]) sh.getRange(d, 2).setValue(b.tenCua[m]);
+      if (!r[3]) { var mm; do { mm = String(Math.floor(100000 + Math.random() * 900000)); } while (maDung[mm]); maDung[mm] = 1; sh.getRange(d, 4).setNumberFormat('@').setValue(mm); }
+    }
+    var maDN = sh.getRange(d, 4).getDisplayValue();
+    sh.getRange(d, 5).setRichTextValue(SpreadsheetApp.newRichTextValue().setText('💬 Gửi mã Zalo').setLinkUrl(linkGuiMa_(sdt, maDN, b.tenCua[m])).build());
+  });
+}
+function dongDangNhap_(ma) { // số dòng của người này trong tab, hoặc 0
+  var sh = soDangNhap_(), n = sh.getLastRow(); if (n < 2) return 0;
+  var ds = sh.getRange(2, 1, n - 1, 1).getDisplayValues();
+  for (var i = 0; i < ds.length; i++) if (ds[i][0] === ma) return i + 2;
+  return 0;
+}
 function ghiDangNhap_(ma, ten, laDangNhap) {
-  var sh = soDangNhap_(), now = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm');
-  var n = sh.getLastRow(), ds = n > 1 ? sh.getRange(2, 1, n - 1, 1).getDisplayValues() : [];
-  for (var i = 0; i < ds.length; i++) if (ds[i][0] === ma) {
-    sh.getRange(i + 2, 4).setValue(now);
-    if (laDangNhap) sh.getRange(i + 2, 5).setValue((+sh.getRange(i + 2, 5).getValue() || 0) + 1);
-    return;
+  var sh = soDangNhap_(), now = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm'), d = dongDangNhap_(ma);
+  if (!d) { if (!laDangNhap) return; sh.appendRow([ma, ten || '', '', '', '', 'Cho phép', now, now, 1]); return; }
+  if (laDangNhap) {
+    if (!sh.getRange(d, 7).getDisplayValue()) sh.getRange(d, 7).setValue(now);
+    sh.getRange(d, 9).setValue((+sh.getRange(d, 9).getValue() || 0) + 1);
   }
-  if (!laDangNhap) return;
-  sh.appendRow([ma, ten || '', now, now, 1, 'Cho phép']);
+  sh.getRange(d, 8).setValue(now);
 }
 function biChan_(ma) {
   var cache = CacheService.getScriptCache(), k = 'chan_' + ma, c = cache.get(k);
   if (c) return c === '1';
-  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_DN), chan = false;
-  if (sh && sh.getLastRow() > 1) {
-    var v = sh.getRange(2, 1, sh.getLastRow() - 1, 6).getDisplayValues();
-    for (var i = 0; i < v.length; i++) if (v[i][0] === ma) { chan = /chặn/i.test(v[i][5]); break; }
-  }
+  var d = dongDangNhap_(ma), chan = d ? /chặn/i.test(soDangNhap_().getRange(d, 6).getDisplayValue()) : false;
   cache.put(k, chan ? '1' : '0', 120);
   return chan;
 }
-function xemDangNhap() { SpreadsheetApp.getActiveSpreadsheet().setActiveSheet(soDangNhap_()); }
+/* App gửi { k, lenh:'dangNhapSdt', sdt, maDN } */
+function dangNhapSdt_(body, cd) {
+  var sdt = chuSo_(body.sdt), maDN = String(body.maDN || '').replace(/\D/g, '');
+  if (sdt.length < 9 || maDN.length < 4) return json_({ ok: false, loi: 'Gõ số điện thoại và mã đăng nhập.' });
+  var lock = LockService.getDocumentLock(); lock.waitLock(20000);
+  try { dongBoDangNhap_(); } finally { lock.releaseLock(); }
+  var sh = soDangNhap_(), n = sh.getLastRow(), v = n > 1 ? sh.getRange(2, 1, n - 1, COT_DN.length).getDisplayValues() : [];
+  var r = v.filter(function (x) { return chuSo_(x[2]) === sdt; });
+  if (!r.length) { cd.tang(); return json_({ ok: false, loi: 'Số này chưa có trong gia phả. Nhờ trưởng họ ghi số của bạn vào bảng.' }); }
+  var dung = r.filter(function (x) { return String(x[3]).trim() === maDN; })[0];
+  if (!dung) { cd.tang(); return json_({ ok: false, loi: 'Mã đăng nhập chưa đúng. Hỏi trưởng họ mã của bạn.' }); }
+  if (/chặn/i.test(dung[5])) return json_({ ok: false, loi: 'Bạn đang bị trưởng họ tạm khoá. Liên hệ trưởng họ để được mở lại.' });
+  var ma = dung[0], b = bang_(); if (!b.dongCua[ma]) return json_({ ok: false, loi: 'Không tìm thấy bạn trong bảng gia phả.' });
+  var het = Date.now() + 400 * 864e5;
+  ghiDangNhap_(ma, b.tenCua[ma], true);
+  return json_({ ok: true, ve: ma + '.' + het + '.' + ky_(ma + '.' + het), ma: ma, ten: b.tenCua[ma] });
+}
+/* Menu: tạo mã cho mọi người có SĐT + mở tab */
+function taoMaDangNhap() {
+  var lock = LockService.getDocumentLock(); lock.waitLock(20000);
+  try { dongBoDangNhap_(); } finally { lock.releaseLock(); }
+  SpreadsheetApp.getActiveSpreadsheet().setActiveSheet(soDangNhap_());
+  try { SpreadsheetApp.getActive().toast('Đã tạo mã cho mọi người có số điện thoại. Bấm "📩 Gửi mã" để nhắn cho từng người.', 'Gia phả', 8); } catch (e) {}
+}
+function xemDangNhap() { taoMaDangNhap(); }
 function boDau_(s) {
   return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
     .toLowerCase().replace(/[^a-z0-9 ]+/g, ' ')
@@ -217,6 +275,7 @@ function khopTen_(go, ten) { // gõ "Chính" hay "Trần Đình Chính" đều k
   return !!go && (go === ten || (' ' + ten).slice(-(go.length + 1)) === ' ' + go);
 }
 function dangNhap_(body, cd) {
+  if (PropertiesService.getScriptProperties().getProperty('CHO_DN_TEN') !== '1') return json_({ ok: false, loi: 'Hãy đăng nhập bằng số điện thoại và mã do trưởng họ gửi.' });
   var b = bang_(), ten = String(body.ten || '').trim(), conAi = String(body.conAi || '').trim(), nam = String(body.namSinh || '').trim();
   if (!ten || !conAi) return json_({ ok: false, loi: 'Gõ tên bạn và tên cha/mẹ (hoặc vợ/chồng)' });
   var cMat = b.cot.indexOf('ngay_mat'), cDm = b.cot.indexOf('da_mat'), cGio = b.cot.indexOf('ngay_gio');
@@ -238,9 +297,13 @@ function dangNhap_(body, cd) {
 /* Menu: bật / tắt bắt đăng nhập */
 function batTatDangNhap() {
   var ui = SpreadsheetApp.getUi(), p = PropertiesService.getScriptProperties(), dang = batDangNhap_();
+  var soMa = 0;
+  if (!dang) { try { dongBoDangNhap_(); var sh = soDangNhap_(); if (sh.getLastRow() > 1) soMa = sh.getRange(2, 4, sh.getLastRow() - 1, 1).getDisplayValues().filter(function (r) { return r[0]; }).length; } catch (e) {} }
   var r = ui.alert(dang ? 'Đang BẬT bắt đăng nhập' : 'Đang TẮT bắt đăng nhập',
     dang ? 'Tắt đi thì ai có link là xem được, không cần đăng nhập. Tắt?' :
-      'Bật lên thì mở app phải trả lời "Bạn là ai, con ai?". Chỉ người CÒN SỐNG có tên trong bảng (và có ghi Cha/Mẹ hoặc Vợ/Chồng) mới vào được.\n\nBật?',
+      'Bật lên thì mở app BẮT BUỘC đăng nhập bằng số điện thoại + mã 6 số.\nHiện có ' + soMa + ' người đã có mã (tab "Đăng nhập").' +
+      (soMa ? '' : '\n\n⚠️ Chưa ai có mã! Ghi số điện thoại vào bảng Người trước, nếu không sẽ không ai vào được (kể cả bạn).') +
+      '\n\nNhớ ghi số của CHÍNH BẠN và gửi mã cho mình trước. Bật?',
     ui.ButtonSet.YES_NO);
   if (r !== ui.Button.YES) return;
   p.setProperty('BAT_DANG_NHAP', dang ? '0' : '1');
@@ -676,7 +739,7 @@ function onOpen() {
     .addItem('👤 Cấp mật mã sửa cho người khác', 'capMaSua')
     .addSeparator()
     .addItem('🔒 Bật / tắt bắt đăng nhập', 'batTatDangNhap')
-    .addItem('📋 Xem ai đã đăng nhập / chặn', 'xemDangNhap')
+    .addItem('📋 Mã đăng nhập (SĐT) / ai đã vào / chặn', 'xemDangNhap')
     .addItem('🚪 Đăng xuất tất cả máy', 'dangXuatTatCa')
     .addToUi();
 }
@@ -736,6 +799,8 @@ function onEdit(e) {
         if (JSON.stringify(hoa) !== JSON.stringify(gt)) oTen.setValues(hoa);
       }
       if ((cCha >= c1 && cCha <= c2) || (cMe >= c1 && cMe <= c2)) tuDienChaMe_(sh, e.range.getRow(), e.range.getLastRow());
+      var cDt = hd.indexOf('dien_thoai') + 1;
+      if (cDt >= c1 && cDt <= c2) { try { dongBoDangNhap_(); } catch (x) {} } // ghi SĐT → tự cấp mã đăng nhập
     }
     finally { lock.releaseLock(); }
   } catch (err) { console.error('onEdit lỗi: ' + err + ' | ' + (err && err.stack)); }

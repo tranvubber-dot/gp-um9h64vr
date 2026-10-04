@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="no-referrer">
+<title>Gửi mã đăng nhập</title>
+<style>
+:root { --nen: #fff4ec; --chu: #2a1a10; --chu2: #6d5a4a; --the: #fff; --vien: #f0dcc8; --do: #e5383b; }
+@media (prefers-color-scheme: dark) { :root { --nen: #1a0f0a; --chu: #f6ece2; --chu2: #c2ab96; --the: #2a1b14; --vien: #4a3326; } }
+* { box-sizing: border-box; } body { margin: 0; min-height: 100vh; background: var(--nen); color: var(--chu); font: 16px/1.5 -apple-system, 'Segoe UI', sans-serif; display: grid; place-items: center; padding: 20px 16px; }
+.hop { width: 100%; max-width: 420px; background: var(--the); border: 1px solid var(--vien); border-radius: 22px; padding: 22px 18px; box-shadow: 0 10px 30px rgba(0,0,0,.08); }
+.an { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: linear-gradient(135deg,#e5383b,#ffa63d); color: #fff; font: 700 28px serif; margin-bottom: 10px; }
+h1 { font-size: 20px; margin: 0 0 4px; } p { margin: 6px 0; color: var(--chu2); }
+.ma { font-size: 34px; font-weight: 800; letter-spacing: .18em; color: var(--do); margin: 10px 0; }
+pre { white-space: pre-wrap; background: rgba(0,0,0,.04); border-radius: 12px; padding: 10px 12px; font: 14px/1.5 inherit; color: var(--chu); }
+a.nut, button { display: block; width: 100%; text-align: center; padding: 14px; margin-top: 10px; border-radius: 14px; border: 0; font: 600 16px inherit; text-decoration: none; cursor: pointer; }
+.sms { background: #34c759; color: #fff; } .zalo { background: #0068ff; color: #fff; font-size: 18px; padding: 16px; box-shadow: 0 6px 18px rgba(0,104,255,.35); } .chep { background: rgba(0,0,0,.06); color: var(--chu); }
+.tb { min-height: 1.5em; text-align: center; font-size: 14px; color: #2e7d5b; }
+</style></head><body>
+<div class="hop">
+  <div class="an">陳</div>
+  <h1 id="tieuDe">Gửi mã đăng nhập</h1>
+  <p id="soDt"></p>
+  <div class="ma" id="ma"></div>
+  <pre id="noiDung"></pre>
+  <button class="zalo" id="nutZalo">💬 Gửi qua Zalo</button>
+  <p style="text-align:center;font-size:13px;margin:6px 0 0">Bấm là nội dung được chép sẵn và Zalo mở đúng người.<br>Vào ô chat, <b>bấm giữ → Dán</b> rồi gửi.</p>
+  <button class="chep" id="nutChep">📋 Chép lại nội dung</button>
+  <a class="nut sms" id="nutSms" style="opacity:.85">📩 Hoặc gửi tin nhắn SMS</a>
+  <p class="tb" id="tb"></p>
+</div>
+<script>
+(function () {
+  var q = {}; location.hash.slice(1).split('&').forEach(function (x) { var i = x.indexOf('='); if (i > 0) q[x.slice(0, i)] = decodeURIComponent(x.slice(i + 1)); });
+  var sdt = (q.s || '').replace(/[^\d+]/g, ''), ma = (q.m || '').replace(/\D/g, ''), ten = q.t || '';
+  var app = location.href.replace(/gui-ma\.html.*$/, '');
+  var nd = 'Mã đăng nhập Gia phả Họ Trần Đình' + (ten ? ' của ' + ten : '') + ': ' + ma + '\nMở app: ' + app + '\nChọn "Số điện thoại", gõ số ' + sdt + ' và mã trên.';
+  document.getElementById('tieuDe').textContent = ten ? 'Gửi mã cho ' + ten : 'Gửi mã đăng nhập';
+  document.getElementById('soDt').textContent = 'Số điện thoại: ' + sdt;
+  document.getElementById('ma').textContent = ma;
+  document.getElementById('noiDung').textContent = nd;
+  document.getElementById('nutSms').href = 'sms:' + sdt + (/iPhone|iPad|Mac/.test(navigator.userAgent) ? '&' : '?') + 'body=' + encodeURIComponent(nd);
+  function chep(xong) {
+    var ok = function () { document.getElementById('tb').textContent = 'Đã chép nội dung. Dán vào ô chat là xong.'; xong && xong(); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(nd).then(ok, function () { xong && xong(); });
+    else { var t = document.createElement('textarea'); t.value = nd; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) {} t.remove(); ok(); }
+  }
+  document.getElementById('nutChep').onclick = function () { chep(); };
+  document.getElementById('nutZalo').onclick = function () { chep(function () { setTimeout(function () { location.href = 'https://zalo.me/' + sdt.replace(/^\+?84/, '0'); }, 500); }); };
+  try { history.replaceState(null, '', location.pathname); } catch (e) {} // không để mã nằm trên thanh địa chỉ
+})();
+</script>
+</body></html>
