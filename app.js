@@ -460,6 +460,7 @@
           el('path', { 'class': 'noi-bong', d: d }, lop);
           el('path', { 'class': 'noi' + (c.dich && dich ? ' dich' : ''), d: d }, lop);
           el('path', { 'class': 'noi-sang', d: d }, lop);
+          el('path', { 'class': 'mach' + (c.dich && dich ? ' dich' : ''), d: d, style: 'animation-delay:-' + ((c.doi || 0) * 0.37 % 2).toFixed(2) + 's' }, lop); // dòng máu chảy từ cha mẹ xuống con
         });
       }
       if (tatCa.length) {
