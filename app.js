@@ -58,7 +58,7 @@
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 
   /* ---------- Link khôi phục: #kp=<cài đặt mã hoá> (không chứa số điện thoại hay mã gia đình) ---------- */
-  var KHOA_LINK = ['toi', 'cachxem', 'xhCheDo', 'anMau', 'khoa'];
+  var KHOA_LINK = ['toi', 'cachxem', 'xhCheDo', 'anMau', 'khoa', 've']; // 've' = vé đăng nhập: link khôi phục mang theo luôn, khỏi đăng nhập lại
   /* Chìa khoá xem gia phả: lấy từ link "#k=…" (người trong họ gửi cho nhau), lưu lại trên máy. */
   function layKhoaTuChuoi(s) { // nhận cả link dài "#k=…" lẫn link ngắn "#Ab3dE5fG7h"
     s = String(s || '').trim();
