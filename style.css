@@ -752,3 +752,21 @@ html[data-nen="rongphuong"] .noi, html[data-nen="sonmai"] .noi { stroke: #f0b84a
 @media (prefers-reduced-motion: reduce) { .song-sang, .vet-sang, .bui-vang { animation: none; display: none; } }
 .kieu-nhanh { margin: 4px 0 12px; } .kieu-nhanh > span { display: block; font-weight: 600; margin-bottom: 2px; }
 .kieu-nhanh .chon-dn { margin-top: 6px; }
+
+/* ===== Tự co theo bề rộng từng máy: không dòng nào tràn khỏi màn hình ===== */
+.ds-nguoi, .ds-gio, .ds-chi, .chip-ds { grid-template-columns: minmax(0, 1fr); }
+.ds-nguoi li, .ds-gio li, .ds-chi li { min-width: 0; max-width: 100%; }
+.ds-nguoi .ten { overflow-wrap: anywhere; line-height: 1.25; }
+.ds-nguoi .mo { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; line-height: 1.35; margin-top: 2px; }
+.ds-nguoi li > .nhan, .ds-nguoi li > a.nhan { flex: none; }
+.trang { overflow-x: hidden; max-width: 100%; }
+@media (max-width: 420px) {
+  .ds-nguoi li, .ds-gio li { gap: 10px; padding: 9px 10px; }
+  .ds-nguoi .cham { width: 38px; height: 38px; font-size: 15px; }
+  .ds-nguoi .ten { font-size: 15px; }
+  .ds-nguoi .mo { font-size: 12px; }
+  .nhan { font-size: 10.5px; padding: 3px 7px; }
+}
+.loc { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
+.loc select { min-width: 0; width: 100%; text-overflow: ellipsis; }
+@media (max-width: 360px) { .loc select { font-size: 13px; padding-left: 10px; padding-right: 22px; } }
