@@ -675,30 +675,65 @@
     }
 
     h += '<div class="hang-nut" style="margin-top:18px"><button class="nut chinh" data-di="cay">Xem trên phả đồ</button><button class="nut" data-di="xh">Tính xưng hô với người này</button></div>';
-    h += '<button class="nut-sua" data-di="sua"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>Đổi ảnh, sửa tiểu sử &amp; liên lạc</button>';
+    h += '<div class="hang-sua"><button class="nut-sua" data-di="sua"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>Sửa thông tin, đổi ảnh</button>' +
+      '<button class="nut-sua" data-di="themCon">＋ Thêm con</button><button class="nut-sua" data-di="themVC">＋ Thêm ' + (p.gioi === 'nu' ? 'chồng' : 'vợ') + '</button></div>';
     $('#noiDungNgan').innerHTML = h;
     $('#noiDungNgan').dataset.id = id;
     var n = $('#nganKeo'); n.classList.add('mo'); n.setAttribute('aria-hidden', 'false'); n.scrollTop = 0;
     $('#manChe').hidden = window.innerWidth >= 900;
   }
-  /* ---------- Sửa thông tin từ điện thoại: ảnh, tiểu sử, liên lạc → ghi thẳng vào Google Sheet ---------- */
+  /* ---------- Sửa / thêm người từ điện thoại → ghi thẳng vào Google Sheet (cần mật mã sửa do trưởng họ cấp) ---------- */
   var ANH_MOI = null;
+  function maTu(x) { var m = String(x || '').match(/([A-Za-z]{1,4}\d{1,6})\s*\)?\s*$/); return m ? m[1] : ''; }
+  function dongGoc(id) { var r = (RAW.nguoi || []).filter(function (x) { return String(x.ma).trim() === id; })[0] || {}; return Object.assign({}, r, (LH && LH[id]) || {}); }
+  function oSua(k, nhan, gt, kieu, goiY) {
+    return '<label class="o-sua"><span>' + nhan + '</span><input data-truong="' + k + '" data-cu="' + esc(gt || '') + '" value="' + esc(gt || '') + '" type="' + (kieu || 'text') + '" placeholder="' + esc(goiY || '') + '" autocomplete="off"></label>';
+  }
+  function chonNguoi(k, nhan, cu, loc, boQua, ghiChu) { // cu = '?' nghĩa là ô trong Sheet đang ghi sai
+    var ds = DB.list.filter(function (q) { return q.id !== boQua && (!loc || loc(q)); })
+      .sort(function (a, b) { return (a.doi || 99) - (b.doi || 99) || a.thuTuDong - b.thuTuDong; });
+    return '<label class="o-sua"><span>' + nhan + '</span><select data-truong="' + k + '" data-cu="' + esc(cu || '') + '"><option value=""' + (cu === '?' ? ' selected' : '') + '>— Không / chưa rõ —</option>' +
+      ds.map(function (q) { return '<option value="' + esc(q.id) + '"' + (q.id === cu ? ' selected' : '') + '>' + esc(q.ten) + (q.doi ? ' · đời ' + q.doi : '') + '</option>'; }).join('') +
+      '</select>' + (ghiChu ? '<small class="phu">' + ghiChu + '</small>' : '') + '</label>';
+  }
+  function oGioi(cu) {
+    return '<label class="o-sua"><span>Giới tính</span><select data-truong="gioi_tinh" data-cu="' + esc(cu) + '">' +
+      ['Nam', 'Nữ'].map(function (g) { return '<option' + (g === cu ? ' selected' : '') + '>' + g + '</option>'; }).join('') + '</select></label>';
+  }
+  function oMatMa() {
+    return '<label class="o-sua"><span>Mật mã sửa</span><input id="suaMa" type="password" value="' + esc(doc('maSua', '') || '') + '" placeholder="Trưởng họ cấp cho bạn" autocomplete="off"></label>';
+  }
+  function quanHeCu(id, k) { // mã đang ghi ở dòng này, chỉ khi nó trỏ đúng người (bỏ mã cũ sai)
+    var r = dongGoc(id), raw = String(r[k] || '').trim(); if (!raw) return '';
+    var p = DB.byId[id], ds = k === 'ma_cha' ? [p.cha] : k === 'ma_me' ? [p.me] : p.voChong;
+    var m = raw.split(/[,;]/).map(maTu).filter(function (x) { return ds.indexOf(x) >= 0; })[0];
+    return m || '?'; // '?' = ô đang ghi sai → chọn lại sẽ được ghi đè
+  }
   function moSua(id) {
     var p = DB.byId[id]; if (!p) return;
     if (LA_MAU) { bao('Chỉ sửa được khi app đã nối Google Sheet'); return; }
     ANH_MOI = null;
-    var L = p.lienHe || {}, coLH = !!LH;
-    var o = function (k, nhan, gt, kieu, goiY) {
-      return '<label class="o-sua"><span>' + nhan + '</span><input data-truong="' + k + '" data-cu="' + esc(gt || '') + '" value="' + esc(gt || '') + '" type="' + (kieu || 'text') + '" placeholder="' + esc(goiY || '') + '" autocomplete="off"></label>';
-    };
+    var L = p.lienHe || {}, r = dongGoc(id), nam = function (q) { return q.gioi === 'nam'; }, nu = function (q) { return q.gioi === 'nu'; };
+    var cha = quanHeCu(id, 'ma_cha'), me = quanHeCu(id, 'ma_me'), vc = quanHeCu(id, 'ma_vo_chong');
     var h = '<div class="ct-dau">' + cham(p) + '<div><h3>Sửa: ' + esc(p.ten) + '</h3><p class="phu">Lưu xong, ai mở app cũng thấy bản mới.</p></div></div>';
     h += '<div class="sua-anh"><div class="khung-anh" id="suaXem">' + (p.anh ? '<img src="' + esc(p.anh) + '" referrerpolicy="no-referrer" alt="">' : '<span>Chưa có ảnh</span>') + '</div>' +
       '<label class="nut chinh chon-anh">📷 Chọn / chụp ảnh<input id="suaFile" type="file" accept="image/*" hidden></label></div>';
-    h += '<label class="o-sua"><span>Tiểu sử</span><textarea data-truong="tieu_su" data-cu="' + esc(p.tieuSu || '') + '" rows="6" placeholder="Quê quán, học hành, công việc, kỷ niệm…">' + esc(p.tieuSu || '') + '</textarea></label>';
-    h += o('dien_thoai', 'Điện thoại', L.dienThoai, 'tel', '09…') + o('zalo', 'Zalo (số)', L.zalo, 'tel', '') +
-      o('facebook', 'Facebook', L.facebook, 'url', 'link hoặc tên tài khoản') + o('noi_o', 'Nơi ở', p.noiO, 'text', '');
-    if (!coLH && !p.daMat) h += '<p class="phu" style="margin:-4px 2px 10px">Liên lạc đang ẩn (chưa nhập mã gia đình). Ô nào để trống sẽ giữ nguyên như cũ.</p>';
-    h += '<label class="o-sua"><span>Mật mã sửa</span><input id="suaMa" type="password" value="' + esc(doc('maSua', '') || '') + '" placeholder="Hỏi trưởng họ" autocomplete="off"></label>';
+    h += '<h4 class="nhom-sua">Thông tin chính</h4>';
+    h += oSua('ho_ten', 'Họ và tên', r.ho_ten || p.ten) + oGioi(p.gioi === 'nu' ? 'Nữ' : 'Nam');
+    h += '<div class="hai-o">' + oSua('ngay_sinh', 'Năm / ngày sinh', r.ngay_sinh, 'text', '1958') + oSua('ngay_mat', 'Năm / ngày mất', r.ngay_mat, 'text', 'để trống') + '</div>';
+    h += '<div class="hai-o">' + oSua('ngay_gio', 'Ngày giỗ (âm lịch)', r.ngay_gio, 'text', '12/3') + oSua('thu_tu', 'Con thứ mấy', r.thu_tu, 'number', '1, 2, 3…') + '</div>';
+    h += '<h4 class="nhom-sua">Quan hệ</h4>';
+    h += chonNguoi('ma_cha', 'Cha', cha, nam, id, cha === '?' ? 'Ô Cha trong Sheet đang ghi sai, chọn lại giúp.' : '');
+    h += chonNguoi('ma_me', 'Mẹ', me, nu, id, me === '?' ? 'Ô Mẹ trong Sheet đang ghi sai, chọn lại giúp.' : (p.me && !me ? 'App đang tự hiểu mẹ là ' + esc(DB.byId[p.me].ten) + ' (vợ duy nhất của cha).' : ''));
+    h += chonNguoi('ma_vo_chong', 'Vợ / chồng', vc, p.gioi === 'nu' ? nam : nu, id,
+      vc === '?' ? 'Ô Vợ/Chồng trong Sheet đang ghi sai (' + esc(r.ma_vo_chong) + '), chọn lại hoặc để "Không".' : (!vc && p.voChong.length ? 'Đã nối từ phía ' + esc(DB.byId[p.voChong[0]].ten) + '.' : ''));
+    h += '<h4 class="nhom-sua">Thêm</h4>';
+    h += '<label class="o-sua"><span>Tiểu sử</span><textarea data-truong="tieu_su" data-cu="' + esc(p.tieuSu || '') + '" rows="5" placeholder="Học hành, công việc, kỷ niệm…">' + esc(p.tieuSu || '') + '</textarea></label>';
+    h += '<div class="hai-o">' + oSua('que_quan', 'Quê quán', p.queQuan) + oSua('chuc_danh', 'Học vị, chức danh', p.chucDanh) + '</div>';
+    h += '<div class="hai-o">' + oSua('dien_thoai', 'Điện thoại', L.dienThoai, 'tel', '09…') + oSua('zalo', 'Zalo (số)', L.zalo, 'tel', '') + '</div>';
+    h += oSua('facebook', 'Facebook', L.facebook, 'url', 'link hoặc tên tài khoản') + oSua('noi_o', 'Nơi ở', p.noiO, 'text', '');
+    if (!LH && !p.daMat) h += '<p class="phu" style="margin:-4px 2px 10px">Liên lạc đang ẩn (chưa nhập mã gia đình). Ô nào để trống sẽ giữ nguyên như cũ.</p>';
+    h += oMatMa();
     h += '<div class="hang-nut" style="margin-top:14px"><button class="nut chinh" id="nutLuuSua">Lưu lên gia phả</button><button class="nut" data-di="huySua">Huỷ</button></div>';
     $('#noiDungNgan').innerHTML = h;
     $('#nganKeo').scrollTop = 0;
@@ -708,6 +743,27 @@
         .catch(function () { bao('Không đọc được ảnh này, thử ảnh khác'); });
     };
     $('#nutLuuSua').onclick = function () { luuSua(id, this); };
+  }
+  /* Thêm con / vợ-chồng cho 1 người: app tự điền cha mẹ, con thứ, mã */
+  function moThem(id, loai) {
+    var p = DB.byId[id]; if (!p) return;
+    if (LA_MAU) { bao('Chỉ thêm được khi app đã nối Google Sheet'); return; }
+    var laCon = loai === 'con', vc = p.voChong.slice();
+    var tieuDe = laCon ? 'Thêm con của ' + esc(p.ten) : 'Thêm ' + (p.gioi === 'nu' ? 'chồng' : 'vợ') + ' của ' + esc(p.ten);
+    var h = '<div class="ct-dau">' + cham(p) + '<div><h3>' + tieuDe + '</h3><p class="phu">Mã, cha mẹ' + (laCon ? ', con thứ' : '') + ' tự điền.</p></div></div>';
+    if (laCon && vc.length > 1) h += '<label class="o-sua"><span>Con với</span><select id="themBan">' + vc.map(function (s) { return '<option value="' + esc(s) + '">' + esc(DB.byId[s].ten) + '</option>'; }).join('') + '</select></label>';
+    h += oSua('ho_ten', 'Họ và tên', '', 'text', laCon ? 'Trần Văn …' : '');
+    h += oGioi(laCon ? 'Nam' : (p.gioi === 'nu' ? 'Nam' : 'Nữ'));
+    h += '<div class="hai-o">' + oSua('ngay_sinh', 'Năm / ngày sinh', '', 'text', '1990') + oSua('ngay_mat', 'Năm / ngày mất', '', 'text', 'để trống') + '</div>';
+    h += oSua('ngay_gio', 'Ngày giỗ (âm lịch)', '', 'text', 'chỉ khi đã mất, ví dụ 12/3');
+    h += oMatMa();
+    h += '<div class="hang-nut" style="margin-top:14px"><button class="nut chinh" id="nutLuuSua">＋ Thêm vào gia phả</button><button class="nut" data-di="huySua">Huỷ</button></div>';
+    $('#noiDungNgan').innerHTML = h;
+    $('#nganKeo').scrollTop = 0;
+    var oTen = $('#noiDungNgan [data-truong="ho_ten"]'), oGt = $('#noiDungNgan [data-truong="gioi_tinh"]');
+    oTen.oninput = function () { if (/\sthị\s/i.test(' ' + this.value + ' ')) oGt.value = 'Nữ'; };
+    setTimeout(function () { oTen.focus(); }, 350);
+    $('#nutLuuSua').onclick = function () { luuSua(id, this, { loai: loai, goc: id, banDoi: $('#themBan') ? $('#themBan').value : '' }); };
   }
   function thuNhoAnh(file, toiDa) {
     return new Promise(function (ok, loi) {
@@ -722,37 +778,42 @@
       img.src = url;
     });
   }
-  function luuSua(id, nut) {
+  function luuSua(id, nut, them) {
     var ma = $('#suaMa').value.trim();
-    if (!ma) { bao('Nhập mật mã sửa'); $('#suaMa').focus(); return; }
-    var truong = {}, co = !!ANH_MOI;
+    if (!ma) { bao('Nhập mật mã sửa (trưởng họ cấp)'); $('#suaMa').focus(); return; }
+    var truong = {}, co = !!ANH_MOI && !them;
     $('#noiDungNgan').querySelectorAll('[data-truong]').forEach(function (i) {
       var v = i.value.trim(), cu = i.getAttribute('data-cu') || '';
-      if (v === cu) return;
-      if (!v && !LH && i.tagName === 'INPUT' && i.dataset.truong !== 'noi_o') return; // liên lạc đang ẩn: trống = giữ nguyên
+      if (v === cu && !them) return;
+      if (them && !v) return;
+      if (!them && !v && !LH && /^(dien_thoai|zalo|facebook)$/.test(i.dataset.truong)) return; // liên lạc đang ẩn: trống = giữ nguyên
       truong[i.dataset.truong] = v; co = true;
     });
+    if (them && !truong.ho_ten) { bao('Nhập họ và tên'); $('#noiDungNgan [data-truong="ho_ten"]').focus(); return; }
     if (!co) { bao('Chưa thay đổi gì'); return; }
-    nut.disabled = true; nut.textContent = ANH_MOI ? 'Đang tải ảnh lên…' : 'Đang lưu…';
-    var body = { k: doc('khoa', null), lenh: 'sua', maSua: ma, ma: id, truong: truong };
-    if (ANH_MOI) body.anh = ANH_MOI;
+    var chu = nut.textContent;
+    nut.disabled = true; nut.textContent = ANH_MOI && !them ? 'Đang tải ảnh lên…' : 'Đang lưu…';
+    var body = them ? { k: doc('khoa', null), lenh: 'them', maSua: ma, truong: truong, quanHe: them }
+      : { k: doc('khoa', null), lenh: 'sua', maSua: ma, ma: id, truong: truong };
+    if (ANH_MOI && !them) body.anh = ANH_MOI;
     fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d || !d.ok) throw new Error(d && d.loi || 'Không lưu được');
         ghi('maSua', ma);
         if (body.anh) ANH_TAM[id] = body.anh;
-        if (LH) { // cập nhật liên lạc đã mở khoá trên máy này
+        if (LH && !them) { // cập nhật liên lạc đã mở khoá trên máy này
           var x = LH[id] = LH[id] || {};
           ['dien_thoai', 'zalo', 'facebook', 'noi_o'].forEach(function (k) { if (k in truong) x[k] = truong[k]; });
           ghi('lienhe', LH);
         }
-        bao('Đã lưu lên gia phả ✓');
-        return taiDuLieu(true).then(function (m) { RAW = m; dungLai(true); moChiTiet(id); });
+        bao(them ? 'Đã thêm ' + truong.ho_ten + ' ✓' : 'Đã lưu lên gia phả ✓');
+        var moi = them ? d.ma : id;
+        return taiDuLieu(true).then(function (m) { RAW = m; dungLai(true); if (DB.byId[moi]) { moChiTiet(moi); canhGiua(moi, true); } });
       })
       .catch(function (e) {
         bao(e && e.message && !/fetch|network/i.test(e.message) ? e.message : 'Không kết nối được. Thử lại khi có mạng.');
-        nut.disabled = false; nut.textContent = 'Lưu lên gia phả';
+        nut.disabled = false; nut.textContent = chu;
         if (e && /mật mã/i.test(e.message || '')) { ghi('maSua', null); $('#suaMa').select(); }
       });
   }
@@ -779,6 +840,8 @@
       chuyenTab('xungho'); dongNgan(); tinhXH();
     }
     if (di === 'sua') moSua(id);
+    if (di === 'themCon') moThem(id, 'con');
+    if (di === 'themVC') moThem(id, 'vo_chong');
     if (di === 'huySua') moChiTiet(id);
     if (di === 'mokhoa') { dongNgan(); chuyenTab('dongho'); setTimeout(function () { var i = $('#oMa'); if (i) { i.scrollIntoView({ block: 'center' }); i.focus(); } }, 50); }
   });

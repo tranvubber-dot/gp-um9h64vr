@@ -86,7 +86,7 @@ function doPost(e) {
   var cd = chanDo_();
   if (cd.qua) return json_({ ok: false, loi: 'Thử sai quá nhiều lần, đợi 10 phút rồi thử lại' });
   if (!khoaDung_(body.k)) { cd.tang(); return json_({ ok: false, loi: 'can_link' }); }
-  if (body.lenh === 'sua') {
+  if (body.lenh === 'sua' || body.lenh === 'them') {
     try { return suaThongTin_(body, cd); }
     catch (err) { console.error('suaThongTin_: ' + err + ' | ' + (err && err.stack)); return json_({ ok: false, loi: 'Lỗi máy chủ: ' + (err && err.message || err) }); }
   }
@@ -104,19 +104,138 @@ function doPost(e) {
 /* ---------- SỬA THÔNG TIN TỪ ĐIỆN THOẠI (cần MA_SUA) ----------
    App gửi { k, lenh:'sua', maSua, ma:'T030', anh:'<jpeg base64>'?, truong:{ tieu_su, dien_thoai, zalo, facebook, noi_o } }
    Ảnh lưu vào thư mục Drive "Ảnh gia phả" (ai có link mới xem), link ghi vào cột Ảnh của người đó. */
-var TRUONG_SUA = ['tieu_su', 'dien_thoai', 'zalo', 'facebook', 'noi_o'];
+var TRUONG_SUA = ['ho_ten', 'gioi_tinh', 'ngay_sinh', 'ngay_mat', 'ngay_gio', 'thu_tu', 'que_quan', 'chuc_danh',
+  'tieu_su', 'dien_thoai', 'zalo', 'facebook', 'noi_o'];
+var QUAN_HE = ['ma_cha', 'ma_me', 'ma_vo_chong']; // app gửi mã (T003), ghi vào Sheet dạng "Tên · T003"
+
+/* ---------- QUYỀN SỬA: mật mã quản trị (MA_SUA) + mật mã riêng từng người trong tab "Quyền sửa" ---------- */
+var TAB_QUYEN = 'Quyền sửa', TAB_NHAT_KY = 'Nhật ký sửa';
+function aiDuocSua_(ma) {
+  ma = String(ma || '').trim(); if (!ma) return null;
+  var chu = PropertiesService.getScriptProperties().getProperty('MA_SUA');
+  if (chu && ma === String(chu).trim()) return 'Quản trị';
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_QUYEN);
+  if (!sh || sh.getLastRow() < 2) return null;
+  var v = sh.getRange(2, 1, sh.getLastRow() - 1, 2).getDisplayValues();
+  for (var i = 0; i < v.length; i++) if (String(v[i][1]).trim() === ma) return String(v[i][0]).trim() || 'Người được cấp';
+  return null;
+}
+function ghiNhatKy_(ai, viec) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), sh = ss.getSheetByName(TAB_NHAT_KY);
+  if (!sh) {
+    sh = ss.insertSheet(TAB_NHAT_KY); sh.appendRow(['Lúc', 'Ai sửa', 'Việc']); sh.setFrozenRows(1);
+    sh.getRange(1, 1, 1, 3).setFontWeight('bold').setBackground('#8E8A94').setFontColor('#FFFFFF');
+    sh.setColumnWidth(1, 140); sh.setColumnWidth(2, 170); sh.setColumnWidth(3, 560);
+  }
+  sh.appendRow([Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm'), ai, viec]);
+}
+/* Menu: cấp mật mã sửa cho 1 người. Thu hồi = xoá dòng của họ trong tab "Quyền sửa". */
+function capMaSua() {
+  var ui = SpreadsheetApp.getUi();
+  var r = ui.prompt('Cấp quyền sửa gia phả', 'Gõ tên người được cấp (ví dụ: Chú Chính – con bác Liêm):', ui.ButtonSet.OK_CANCEL);
+  var ten = String(r.getResponseText() || '').trim();
+  if (r.getSelectedButton() !== ui.Button.OK || !ten) return;
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), sh = ss.getSheetByName(TAB_QUYEN);
+  if (!sh) {
+    sh = ss.insertSheet(TAB_QUYEN); sh.getRange('B:B').setNumberFormat('@');
+    sh.appendRow(['Người được cấp', 'Mật mã', 'Cấp lúc', 'Ghi chú']); sh.setFrozenRows(1);
+    sh.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#6E56CF').setFontColor('#FFFFFF');
+    sh.setColumnWidth(1, 220); sh.setColumnWidth(2, 110); sh.setColumnWidth(3, 140); sh.setColumnWidth(4, 320);
+    sh.getRange('A1').setNote('Mỗi dòng là 1 người được sửa gia phả trên app. Xoá dòng = thu hồi quyền ngay.');
+  }
+  var ma; do { ma = String(Math.floor(100000 + Math.random() * 900000)); } while (aiDuocSua_(ma));
+  sh.appendRow([ten, ma, Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm'), 'Xoá dòng này để thu hồi quyền']);
+  ui.alert('Đã cấp quyền sửa', 'Mật mã của ' + ten + ':   ' + ma + '\n\nGửi riêng mật mã này cho người đó (Zalo/tin nhắn). Họ nhập 1 lần trên app là sửa được.\nMuốn thu hồi: vào tab "' + TAB_QUYEN + '", xoá dòng của họ.', ui.ButtonSet.OK);
+}
+
+/* ---------- đọc bảng Người + tra quan hệ ---------- */
+function bang_() {
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_NGUOI);
+  var v = sh.getDataRange().getDisplayValues();
+  var cot = v[0].map(function (h) { var k = khoa_(h); return BIET_DANH[k] || k; });
+  var b = { sh: sh, v: v, cot: cot, dongCua: {}, tenCua: {}, gioiCua: {} };
+  var cMa = cot.indexOf('ma'), cTen = cot.indexOf('ho_ten'), cGt = cot.indexOf('gioi_tinh');
+  for (var i = 1; i < v.length; i++) {
+    var m = String(v[i][cMa]).trim(); if (!m) continue;
+    b.dongCua[m] = i + 1; b.tenCua[m] = String(v[i][cTen]).trim(); b.gioiCua[m] = cGt >= 0 ? String(v[i][cGt]).trim() : '';
+  }
+  b.nhan = function (m) { m = String(m || '').trim(); return !m ? '' : (b.tenCua[m] ? b.tenCua[m] + ' · ' + m : m); };
+  b.o = function (ma, k) { var d = b.dongCua[ma], c = cot.indexOf(k); return d && c >= 0 ? String(v[d - 1][c] || '').trim() : ''; };
+  return b;
+}
+function laNu_(g) { return /^n(ữ|u)/i.test(String(g || '').trim()); }
+/* vợ/chồng của 1 người (đọc cả hai chiều), lọc theo giới nếu cần */
+function voChongCua_(b, ma, chiNu) {
+  var ds = [], cVc = b.cot.indexOf('ma_vo_chong');
+  String(b.o(ma, 'ma_vo_chong')).split(/[,;]/).forEach(function (x) { var m = maTu_(x) || x.trim(); if (b.dongCua[m]) ds.push(m); });
+  if (cVc >= 0) Object.keys(b.dongCua).forEach(function (m) {
+    var o = String(b.v[b.dongCua[m] - 1][cVc] || '');
+    if (o.split(/[,;]/).some(function (x) { return (maTu_(x) || x.trim()) === ma; }) && ds.indexOf(m) < 0) ds.push(m);
+  });
+  return ds.filter(function (m) { return m !== ma && (chiNu == null || laNu_(b.gioiCua[m]) === chiNu); });
+}
+function conCua_(b, ma) {
+  var cCha = b.cot.indexOf('ma_cha'), cMe = b.cot.indexOf('ma_me');
+  return Object.keys(b.dongCua).filter(function (m) {
+    var r = b.v[b.dongCua[m] - 1];
+    return (cCha >= 0 && maTu_(r[cCha]) === ma) || (cMe >= 0 && maTu_(r[cMe]) === ma);
+  });
+}
+/* ghi các trường vào 1 dòng; quan hệ nhận mã → "Tên · Mã" */
+function ghiTruong_(b, dong, t) {
+  var da = [];
+  TRUONG_SUA.concat(QUAN_HE).forEach(function (k) {
+    if (!(k in t)) return;
+    var c = b.cot.indexOf(k); if (c < 0) return;
+    var gt = String(t[k] == null ? '' : t[k]).trim();
+    if (QUAN_HE.indexOf(k) >= 0) gt = gt.split(/[,;]/).map(function (x) { return b.nhan(maTu_(x) || x.trim()); }).filter(String).join(', ');
+    b.sh.getRange(dong, c + 1).setNumberFormat('@').setValue(gt.slice(0, 5000));
+    da.push(k);
+  });
+  return da;
+}
+/* Thêm 1 người. qh = { loai: 'con' | 'vo_chong' | '', goc: 'T003', me/cha: mã người kia (tuỳ chọn) } */
+function themNguoi_(t, qh, ai) {
+  t = t || {}; qh = qh || {};
+  var ten = String(t.ho_ten || '').trim();
+  if (!ten) throw new Error('Thiếu họ tên');
+  var b = bang_(), goc = String(qh.goc || '').trim();
+  if (qh.loai && !b.dongCua[goc]) throw new Error('Không thấy người gốc ' + goc);
+  if (!t.gioi_tinh) t.gioi_tinh = /\sthị\s/i.test(' ' + ten + ' ') ? 'Nữ' : 'Nam';
+  if (qh.loai === 'con') {
+    var gocNu = laNu_(b.gioiCua[goc]), ban = qh.banDoi || '';
+    if (!ban) { var vc = voChongCua_(b, goc, !gocNu); if (vc.length === 1) ban = vc[0]; }
+    t.ma_cha = gocNu ? ban : goc; t.ma_me = gocNu ? goc : ban;
+    if (!t.thu_tu) t.thu_tu = String(conCua_(b, goc).length + 1);
+  } else if (qh.loai === 'vo_chong') t.ma_vo_chong = goc;
+  // mã mới = số lớn nhất + 1
+  var lon = 0, dau = 'T';
+  Object.keys(b.dongCua).forEach(function (m) { var x = m.match(/^([A-Za-z]{1,4})(\d+)$/); if (x) { dau = x[1]; lon = Math.max(lon, +x[2]); } });
+  var ma = dau + ('00' + (lon + 1)).slice(-3);
+  // dòng trống đầu tiên sau người cuối cùng
+  var cMa = b.cot.indexOf('ma'), cTen = b.cot.indexOf('ho_ten'), cuoi = 1;
+  for (var i = 1; i < b.v.length; i++) if (String(b.v[i][cMa]).trim() || String(b.v[i][cTen]).trim()) cuoi = i + 1;
+  var dong = cuoi + 1;
+  if (dong > b.sh.getMaxRows()) b.sh.insertRowsAfter(b.sh.getMaxRows(), 50);
+  b.sh.getRange(dong, cMa + 1).setNumberFormat('@').setValue(ma);
+  b.dongCua[ma] = dong; b.tenCua[ma] = ten;
+  ghiTruong_(b, dong, t);
+  SpreadsheetApp.flush();
+  ghiNhatKy_(ai, 'Thêm ' + ten + ' (' + ma + ')' + (qh.loai === 'con' ? ' – con của ' + b.nhan(goc) : qh.loai === 'vo_chong' ? ' – vợ/chồng của ' + b.nhan(goc) : ''));
+  return ma;
+}
+
+/* App gửi { k, lenh:'sua', maSua, ma, anh?, truong:{…} }  hoặc  { k, lenh:'them', maSua, truong:{…}, quanHe:{ loai, goc, banDoi? } } */
 function suaThongTin_(body, cd) {
-  var maSua = PropertiesService.getScriptProperties().getProperty('MA_SUA');
-  if (!maSua) return json_({ ok: false, loi: 'Ban quản trị chưa đặt mật mã sửa' });
-  if (String(body.maSua || '').trim() !== String(maSua).trim()) { cd.tang(); return json_({ ok: false, loi: 'Sai mật mã sửa' }); }
+  var coMa = PropertiesService.getScriptProperties().getProperty('MA_SUA') || SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_QUYEN);
+  if (!coMa) return json_({ ok: false, loi: 'Ban quản trị chưa đặt mật mã sửa' });
+  var ai = aiDuocSua_(body.maSua);
+  if (!ai) { cd.tang(); return json_({ ok: false, loi: 'Sai mật mã sửa (hoặc đã bị thu hồi)' }); }
   var lock = LockService.getDocumentLock(); lock.waitLock(20000);
   try {
-    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_NGUOI);
-    var v = sh.getDataRange().getDisplayValues();
-    var cot = v[0].map(function (h) { var k = khoa_(h); return BIET_DANH[k] || k; });
-    var cMa = cot.indexOf('ma'), dong = -1;
-    for (var i = 1; i < v.length; i++) if (String(v[i][cMa]).trim() === String(body.ma || '').trim()) { dong = i + 1; break; }
-    if (dong < 0) return json_({ ok: false, loi: 'Không tìm thấy người này trong Sheet' });
+    if (body.lenh === 'them') return json_({ ok: true, ma: themNguoi_(body.truong, body.quanHe, ai) });
+    var b = bang_(), dong = b.dongCua[String(body.ma || '').trim()];
+    if (!dong) return json_({ ok: false, loi: 'Không tìm thấy người này trong Sheet' });
     var daSua = [], linkAnh = '';
     if (body.anh) {
       var bytes = Utilities.base64Decode(String(body.anh).replace(/^data:image\/\w+;base64,/, ''));
@@ -124,20 +243,78 @@ function suaThongTin_(body, cd) {
       var file = thuMucAnh_().createFile(Utilities.newBlob(bytes, 'image/jpeg', body.ma + '_' + Date.now() + '.jpg'));
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
       linkAnh = 'https://drive.google.com/file/d/' + file.getId() + '/view';
-      var cAnh = cot.indexOf('anh');
-      if (cAnh >= 0) { sh.getRange(dong, cAnh + 1).setNumberFormat('@').setValue(linkAnh); daSua.push('ảnh'); }
+      var cAnh = b.cot.indexOf('anh');
+      if (cAnh >= 0) { b.sh.getRange(dong, cAnh + 1).setNumberFormat('@').setValue(linkAnh); daSua.push('ảnh'); }
     }
-    var truong = body.truong || {};
-    TRUONG_SUA.forEach(function (k) {
-      if (!(k in truong)) return;
-      var c = cot.indexOf(k); if (c < 0) return;
-      sh.getRange(dong, c + 1).setNumberFormat('@').setValue(String(truong[k] || '').slice(0, 5000));
-      daSua.push(k);
-    });
+    daSua = daSua.concat(ghiTruong_(b, dong, body.truong || {}));
     SpreadsheetApp.flush();
+    if (daSua.length) ghiNhatKy_(ai, 'Sửa ' + b.nhan(body.ma) + ': ' + daSua.join(', '));
     return json_({ ok: true, daSua: daSua, anh: linkAnh });
   } finally { lock.releaseLock(); }
 }
+
+/* Chọn Cha (hoặc Mẹ) trên Sheet → tự điền người còn lại (nếu chỉ có 1 vợ/chồng) và "Con thứ" */
+function tuDienChaMe_(sh, tu, den) {
+  var b = bang_(), cCha = b.cot.indexOf('ma_cha'), cMe = b.cot.indexOf('ma_me'), cThu = b.cot.indexOf('thu_tu');
+  if (cCha < 0 || cMe < 0) return;
+  for (var d = Math.max(2, tu); d <= Math.min(den, b.v.length); d++) {
+    var r = b.v[d - 1], cha = maTu_(r[cCha]), me = maTu_(r[cMe]), goc = cha || me;
+    if (cha && !String(r[cMe]).trim()) { var v = voChongCua_(b, cha, true); if (v.length === 1) sh.getRange(d, cMe + 1).setValue(b.nhan(v[0])); }
+    if (me && !String(r[cCha]).trim()) { var c = voChongCua_(b, me, false); if (c.length === 1) sh.getRange(d, cCha + 1).setValue(b.nhan(c[0])); }
+    if (goc && cThu >= 0 && !String(r[cThu]).trim()) {
+      var anhEm = conCua_(b, goc).filter(function (m) { return b.dongCua[m] !== d; });
+      sh.getRange(d, cThu + 1).setValue(String(anhEm.length + 1));
+    }
+  }
+}
+
+/* ---------- Biểu mẫu thêm người ngay trong Sheet (menu 🌳 Gia phả → ➕ Thêm người) ---------- */
+function moFormThem() {
+  var html = HtmlService.createHtmlOutput(FORM_THEM_).setTitle('Thêm người vào gia phả');
+  SpreadsheetApp.getUi().showSidebar(html);
+}
+function dsNguoiChoForm() {
+  var b = bang_();
+  return Object.keys(b.dongCua).sort(function (x, y) { return b.dongCua[x] - b.dongCua[y]; })
+    .map(function (m) { return { ma: m, ten: b.tenCua[m], nu: laNu_(b.gioiCua[m]), vc: voChongCua_(b, m, null) }; });
+}
+function themTuForm(f) {
+  var lock = LockService.getDocumentLock(); lock.waitLock(20000);
+  try {
+    var t = { ho_ten: f.ho_ten, gioi_tinh: f.gioi_tinh, ngay_sinh: f.ngay_sinh, ngay_mat: f.ngay_mat, ngay_gio: f.ngay_gio };
+    Object.keys(t).forEach(function (k) { if (!t[k]) delete t[k]; });
+    var ai = Session.getActiveUser().getEmail() || 'Sửa trên Sheet';
+    return themNguoi_(t, { loai: f.loai, goc: f.goc, banDoi: f.banDoi }, ai);
+  } finally { lock.releaseLock(); }
+}
+var FORM_THEM_ = '<!doctype html><html><head><meta charset="utf-8"><style>' +
+  'body{font:14px system-ui,-apple-system,sans-serif;margin:14px;color:#222}label{display:block;margin:12px 0 4px;font-weight:600}' +
+  'input,select{width:100%;box-sizing:border-box;padding:9px;border:1px solid #ccc;border-radius:8px;font-size:14px}' +
+  '.hang{display:flex;gap:8px}.hang>*{flex:1}button{margin-top:16px;width:100%;padding:12px;border:0;border-radius:10px;background:#E5383B;color:#fff;font-size:15px;font-weight:700;cursor:pointer}' +
+  '.goi{color:#777;font-size:12px;margin-top:4px}#tb{margin-top:12px;padding:10px;border-radius:8px;display:none}.ok{background:#E8F7EE;color:#176B3A}.loi{background:#FDECEC;color:#A11}' +
+  '</style></head><body>' +
+  '<label>Người này là</label><select id="loai"><option value="con">Con của…</option><option value="vo_chong">Vợ / chồng của…</option><option value="">Người mới (chưa nối với ai)</option></select>' +
+  '<div id="khungGoc"><label id="nhanGoc">Con của</label><select id="goc"></select><div id="khungBan"><label>Với (mẹ/cha của cháu)</label><select id="ban"></select></div></div>' +
+  '<label>Họ và tên</label><input id="ten" placeholder="Trần Văn …" autofocus>' +
+  '<label>Giới tính</label><select id="gt"><option value="">Tự đoán (có chữ “Thị” là Nữ)</option><option>Nam</option><option>Nữ</option></select>' +
+  '<div class="hang"><div><label>Năm / ngày sinh</label><input id="sinh" placeholder="1958"></div><div><label>Năm / ngày mất</label><input id="mat" placeholder="để trống nếu còn sống"></div></div>' +
+  '<label>Ngày giỗ (âm lịch)</label><input id="gio" placeholder="12/3">' +
+  '<button id="nut">➕ Thêm vào gia phả</button><div id="tb"></div>' +
+  '<p class="goi">Mã, cha mẹ, con thứ tự điền. Thêm xong form vẫn mở để thêm tiếp người sau.</p>' +
+  '<script>var DS=[];function $(i){return document.getElementById(i)}' +
+  'function veGoc(){var l=$("loai").value;$("khungGoc").style.display=l?"":"none";$("nhanGoc").textContent=l==="con"?"Con của":"Vợ / chồng của";' +
+  'var cu=$("goc").value;$("goc").innerHTML=DS.map(function(p){return "<option value=\\""+p.ma+"\\">"+p.ten+" · "+p.ma+"</option>"}).join("");if(cu)$("goc").value=cu;veBan()}' +
+  'function veBan(){var p=DS.filter(function(x){return x.ma===$("goc").value})[0];var vc=p?p.vc:[];var hien=$("loai").value==="con"&&vc.length>1;$("khungBan").style.display=hien?"":"none";' +
+  '$("ban").innerHTML=vc.map(function(m){var q=DS.filter(function(x){return x.ma===m})[0];return "<option value=\\""+m+"\\">"+(q?q.ten:m)+" · "+m+"</option>"}).join("")}' +
+  'function tai(chon){google.script.run.withSuccessHandler(function(d){DS=d;veGoc();if(chon)$("goc").value=chon;veBan()}).dsNguoiChoForm()}' +
+  '$("loai").onchange=veGoc;$("goc").onchange=veBan;' +
+  '$("nut").onclick=function(){var f={loai:$("loai").value,goc:$("goc").value,banDoi:$("khungBan").style.display===""?$("ban").value:"",ho_ten:$("ten").value.trim(),gioi_tinh:$("gt").value,ngay_sinh:$("sinh").value.trim(),ngay_mat:$("mat").value.trim(),ngay_gio:$("gio").value.trim()};' +
+  'if(!f.ho_ten){$("ten").focus();return}$("nut").disabled=true;$("nut").textContent="Đang thêm…";' +
+  'google.script.run.withSuccessHandler(function(ma){var tb=$("tb");tb.className="ok";tb.style.display="block";tb.textContent="Đã thêm "+f.ho_ten+" ("+ma+").";' +
+  '["ten","sinh","mat","gio"].forEach(function(i){$(i).value=""});$("gt").value="";$("nut").disabled=false;$("nut").textContent="➕ Thêm vào gia phả";$("ten").focus();tai(f.goc)})' +
+  '.withFailureHandler(function(e){var tb=$("tb");tb.className="loi";tb.style.display="block";tb.textContent="Lỗi: "+e.message;$("nut").disabled=false;$("nut").textContent="➕ Thêm vào gia phả"}).themTuForm(f)};' +
+  'tai()</script></body></html>';
+
 function thuMucAnh_() {
   var ten = 'Ảnh gia phả', it = DriveApp.getFoldersByName(ten);
   return it.hasNext() ? it.next() : DriveApp.createFolder(ten);
@@ -344,8 +521,10 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('🌳 Gia phả')
     .addItem('Sắp xếp lại Sheet cho dễ nhìn', 'lamGonSheet')
     .addItem('Điền mã còn thiếu', 'dienMaConThieu')
+    .addItem('➕ Thêm người (biểu mẫu)', 'moFormThem')
     .addSeparator()
-    .addItem('🔑 Đặt mật mã sửa (đổi ảnh từ điện thoại)', 'datMaSua')
+    .addItem('🔑 Đặt mật mã quản trị của tôi', 'datMaSua')
+    .addItem('👤 Cấp mật mã sửa cho người khác', 'capMaSua')
     .addToUi();
 }
 
@@ -394,7 +573,12 @@ function onEdit(e) {
     if (sh.getName() !== TAB_NGUOI || e.range.getLastRow() < 2) return;
     var lock = LockService.getDocumentLock();
     if (!lock.tryLock(20000)) return;
-    try { dienMa_(sh, 2, sh.getLastRow()); } // rà cả bảng: dòng nào lần trước bị lỡ cũng được bù
+    try {
+      dienMa_(sh, 2, sh.getLastRow()); // rà cả bảng: dòng nào lần trước bị lỡ cũng được bù
+      var hd = sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0].map(function (h) { var k = khoa_(h); return BIET_DANH[k] || k; });
+      var c1 = e.range.getColumn(), c2 = e.range.getLastColumn(), cCha = hd.indexOf('ma_cha') + 1, cMe = hd.indexOf('ma_me') + 1;
+      if ((cCha >= c1 && cCha <= c2) || (cMe >= c1 && cMe <= c2)) tuDienChaMe_(sh, e.range.getRow(), e.range.getLastRow());
+    }
     finally { lock.releaseLock(); }
   } catch (err) { console.error('onEdit lỗi: ' + err + ' | ' + (err && err.stack)); }
 }

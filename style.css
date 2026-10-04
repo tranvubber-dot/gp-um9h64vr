@@ -602,3 +602,12 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
 .hang-cap-nhat { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 10px 10px 16px; border-radius: 18px; margin-bottom: 12px; font-size: 14px; color: var(--chu2); }
 .hang-cap-nhat b { color: var(--chu); }
 .hang-cap-nhat .nut { padding: 9px 14px; font-size: 14px; }
+
+/* Sửa / thêm người */
+.hang-sua { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0 8px; }
+.hang-sua .nut-sua { margin: 0; }
+.hang-sua .nut-sua:first-child { grid-column: 1 / -1; }
+.nhom-sua { margin: 18px 2px 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--chu3); }
+.hai-o { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.o-sua select { width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--kinh-vien); background: var(--kinh-dam); color: inherit; font: inherit; font-size: 16px; -webkit-appearance: none; appearance: none; }
+.o-sua small.phu { display: block; margin: 5px 2px 0; font-size: 12.5px; }

@@ -82,13 +82,19 @@
 
     // Ô Cha / Mẹ / Vợ chồng có thể ghi mã (T003), "Tên · T003" (chọn từ danh sách) hoặc chỉ tên (nếu không trùng)
     var theoTen = {};
-    list.forEach(function (p) { var k = p.ten.toLowerCase().replace(/\s+/g, ' '); (theoTen[k] = theoTen[k] || []).push(p.id); });
+    list.forEach(function (p) { var k = String(p.ten).normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim(); (theoTen[k] = theoTen[k] || []).push(p.id); });
+    function chuanTen(t) { return String(t || '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim(); }
     function giai(ref) {
       ref = String(ref || '').trim(); if (!ref) return null;
       if (byId[ref]) return ref;
       var m = ref.match(/([A-Za-z]{1,4}\d{1,6})\s*\)?\s*$/);
-      if (m && byId[m[1]]) return m[1];
-      var ds = theoTen[ref.toLowerCase().replace(/\s+/g, ' ')];
+      var ten = chuanTen(ref.replace(/[·\-–(]?\s*[A-Za-z]{1,4}\d{1,6}\s*\)?\s*$/, ''));
+      if (m && byId[m[1]]) {
+        // "Tên · Mã" mà tên không khớp người mang mã đó (mã cũ còn sót) → tìm theo tên, không thì bỏ
+        if (!ten || chuanTen(byId[m[1]].ten) === ten) return m[1];
+        var dt = theoTen[ten]; return dt && dt.length === 1 ? dt[0] : null;
+      }
+      var ds = theoTen[ten || chuanTen(ref)];
       return ds && ds.length === 1 ? ds[0] : null;
     }
     list.forEach(function (p) {
@@ -103,6 +109,11 @@
     });
     list.forEach(function (p) {
       p.voChong.forEach(function (s) { if (byId[s].voChong.indexOf(p.id) < 0) byId[s].voChong.push(p.id); });
+    });
+    // Chỉ ghi Cha mà cha có đúng 1 vợ → mẹ là bà đó (và ngược lại), đỡ phải điền cả hai ô
+    list.forEach(function (p) {
+      if (p.cha && !p.me) { var v = byId[p.cha].voChong.filter(function (s) { return byId[s].gioi === 'nu'; }); if (v.length === 1) p.me = v[0]; }
+      else if (p.me && !p.cha) { var c = byId[p.me].voChong.filter(function (s) { return byId[s].gioi === 'nam'; }); if (c.length === 1) p.cha = c[0]; }
     });
 
     // Huyết thống: có cha/mẹ trong họ, hoặc là gốc (không cha mẹ, không phải dâu/rể của ai có cha mẹ)
