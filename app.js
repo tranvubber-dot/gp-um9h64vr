@@ -339,7 +339,6 @@
     var lop = 'the ' + (p.gioi === 'nu' ? 'nu' : 'nam') + (p.daMat ? ' mat' : '') + (p.dauRe ? ' dr' : '') + (p.id === chonId ? ' chon' : '') + (p.id === TOI ? ' toi' : '');
     var g = el('g', { 'class': lop, 'data-id': p.id, transform: 'translate(' + x + ',' + y + ')' }, cha);
     var vo = el('g', { 'class': 'vo' }, g);
-    if (p.id === TOI) el('rect', { 'class': 'hao-quang', x: -6, y: -6, width: CW + 12, height: CH + 12, rx: 26, filter: 'url(#fHao)' }, vo); // hào quang vàng cho thẻ "Bạn"
     if (laCuTo(p)) { // ảnh thờ trong khung vàng, dựng tách phía trên thẻ
       var fx = (CW - KHUNG_W) / 2, fy = -KHUNG_H - KHUNG_CACH, wx = fx + KHUNG_W * 0.223, wy = fy + KHUNG_H * 0.157, ww = KHUNG_W * 0.546, wh = KHUNG_H * 0.688;
       var hq = el('g', { 'class': 'hao-to', transform: 'translate(' + (fx + KHUNG_W / 2) + ' ' + (fy + KHUNG_H / 2) + ')' }, vo); // hào quang chói lọi
