@@ -254,6 +254,7 @@ function ghiTruong_(b, dong, t) {
     if (!(k in t)) return;
     var c = b.cot.indexOf(k); if (c < 0) return;
     var gt = String(t[k] == null ? '' : t[k]).trim();
+    if (k === 'ho_ten') gt = gt.replace(/\s+/g, ' ').toUpperCase();
     if (QUAN_HE.indexOf(k) >= 0) gt = gt.split(/[,;]/).map(function (x) { return b.nhan(maTu_(x) || x.trim()); }).filter(String).join(', ');
     b.sh.getRange(dong, c + 1).setNumberFormat('@').setValue(gt.slice(0, 5000));
     da.push(k);
@@ -263,8 +264,9 @@ function ghiTruong_(b, dong, t) {
 /* Thêm 1 người. qh = { loai: 'con' | 'vo_chong' | '', goc: 'T003', me/cha: mã người kia (tuỳ chọn) } */
 function themNguoi_(t, qh, ai) {
   t = t || {}; qh = qh || {};
-  var ten = String(t.ho_ten || '').trim();
+  var ten = String(t.ho_ten || '').trim().replace(/\s+/g, ' ').toUpperCase();
   if (!ten) throw new Error('Thiếu họ tên');
+  t.ho_ten = ten;
   var b = bang_(), goc = String(qh.goc || '').trim();
   if (qh.loai && !b.dongCua[goc]) throw new Error('Không thấy người gốc ' + goc);
   if (!t.gioi_tinh) t.gioi_tinh = /\sthị\s/i.test(' ' + ten + ' ') ? 'Nữ' : 'Nam';
@@ -317,6 +319,28 @@ function suaThongTin_(body, cd) {
     SpreadsheetApp.flush();
     if (daSua.length) ghiNhatKy_(ai, 'Sửa ' + b.nhan(body.ma) + ': ' + daSua.join(', '));
     return json_({ ok: true, daSua: daSua, anh: linkAnh });
+  } finally { lock.releaseLock(); }
+}
+
+/* Menu: viết hoa toàn bộ họ tên + cập nhật tên trong các ô Cha / Mẹ / Vợ-Chồng cho khớp */
+function vietHoaTen() {
+  var lock = LockService.getDocumentLock(); lock.waitLock(20000);
+  try {
+    var b = bang_(), n = b.v.length - 1, cTen = b.cot.indexOf('ho_ten');
+    if (cTen < 0 || n < 1) return;
+    Object.keys(b.tenCua).forEach(function (m) { b.tenCua[m] = String(b.tenCua[m]).replace(/\s+/g, ' ').toUpperCase(); });
+    var tenMoi = b.v.slice(1).map(function (r) { return [String(r[cTen] || '').trim().replace(/\s+/g, ' ').toUpperCase()]; });
+    b.sh.getRange(2, cTen + 1, n, 1).setValues(tenMoi);
+    QUAN_HE.forEach(function (k) {
+      var c = b.cot.indexOf(k); if (c < 0) return;
+      var cot = b.v.slice(1).map(function (r) {
+        var o = String(r[c] || '').trim(); if (!o) return [''];
+        return [o.split(/[,;]/).map(function (x) { var m = maTu_(x); return m && b.tenCua[m] ? b.nhan(m) : x.trim().toUpperCase(); }).filter(String).join(', ')];
+      });
+      b.sh.getRange(2, c + 1, n, 1).setValues(cot);
+    });
+    SpreadsheetApp.flush();
+    try { SpreadsheetApp.getActive().toast('Đã viết hoa toàn bộ họ tên.', 'Gia phả', 5); } catch (e) {}
   } finally { lock.releaseLock(); }
 }
 
@@ -379,7 +403,7 @@ var FORM_THEM_ = '<!doctype html><html><head><meta charset="utf-8"><style>' +
   '</style></head><body>' +
   '<label>Người này là</label><select id="loai"><option value="con">Con của…</option><option value="vo_chong">Vợ / chồng của…</option><option value="">Người mới (chưa nối với ai)</option></select>' +
   '<div id="khungGoc"><label id="nhanGoc">Con của</label><select id="goc"></select><div id="khungBan"><label>Với (mẹ/cha của cháu)</label><select id="ban"></select></div></div>' +
-  '<label>Họ và tên</label><input id="ten" placeholder="Trần Văn …" autofocus>' +
+  '<label>Họ và tên</label><input id="ten" placeholder="TRẦN ĐÌNH …" autofocus style="text-transform:uppercase;font-weight:600">' +
   '<label>Giới tính</label><select id="gt"><option value="">Tự đoán (có chữ “Thị” là Nữ)</option><option>Nam</option><option>Nữ</option></select>' +
   '<div class="hang"><div><label>Năm / ngày sinh</label><input id="sinh" placeholder="1958"></div><div><label>Năm / ngày mất</label><input id="mat" placeholder="để trống nếu còn sống"></div></div>' +
   '<label>Ngày giỗ (âm lịch)</label><input id="gio" placeholder="12/3">' +
@@ -392,7 +416,7 @@ var FORM_THEM_ = '<!doctype html><html><head><meta charset="utf-8"><style>' +
   '$("ban").innerHTML=vc.map(function(m){var q=DS.filter(function(x){return x.ma===m})[0];return "<option value=\\""+m+"\\">"+(q?q.ten:m)+" · "+m+"</option>"}).join("")}' +
   'function tai(chon){google.script.run.withSuccessHandler(function(d){DS=d;veGoc();if(chon)$("goc").value=chon;veBan()}).dsNguoiChoForm()}' +
   '$("loai").onchange=veGoc;$("goc").onchange=veBan;' +
-  '$("nut").onclick=function(){var f={loai:$("loai").value,goc:$("goc").value,banDoi:$("khungBan").style.display===""?$("ban").value:"",ho_ten:$("ten").value.trim(),gioi_tinh:$("gt").value,ngay_sinh:$("sinh").value.trim(),ngay_mat:$("mat").value.trim(),ngay_gio:$("gio").value.trim()};' +
+  '$("nut").onclick=function(){var f={loai:$("loai").value,goc:$("goc").value,banDoi:$("khungBan").style.display===""?$("ban").value:"",ho_ten:$("ten").value.trim().toUpperCase(),gioi_tinh:$("gt").value,ngay_sinh:$("sinh").value.trim(),ngay_mat:$("mat").value.trim(),ngay_gio:$("gio").value.trim()};' +
   'if(!f.ho_ten){$("ten").focus();return}$("nut").disabled=true;$("nut").textContent="Đang thêm…";' +
   'google.script.run.withSuccessHandler(function(ma){var tb=$("tb");tb.className="ok";tb.style.display="block";tb.textContent="Đã thêm "+f.ho_ten+" ("+ma+").";' +
   '["ten","sinh","mat","gio"].forEach(function(i){$(i).value=""});$("gt").value="";$("nut").disabled=false;$("nut").textContent="➕ Thêm vào gia phả";$("ten").focus();tai(f.goc)})' +
@@ -605,6 +629,7 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('🌳 Gia phả')
     .addItem('Sắp xếp lại Sheet cho dễ nhìn', 'lamGonSheet')
     .addItem('Điền mã còn thiếu', 'dienMaConThieu')
+    .addItem('🔠 Viết hoa toàn bộ tên', 'vietHoaTen')
     .addItem('➕ Thêm người (biểu mẫu)', 'moFormThem')
     .addSeparator()
     .addItem('🔑 Đặt mật mã quản trị của tôi', 'datMaSua')
@@ -663,7 +688,12 @@ function onEdit(e) {
     try {
       dienMa_(sh, 2, sh.getLastRow()); // rà cả bảng: dòng nào lần trước bị lỡ cũng được bù
       var hd = sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0].map(function (h) { var k = khoa_(h); return BIET_DANH[k] || k; });
-      var c1 = e.range.getColumn(), c2 = e.range.getLastColumn(), cCha = hd.indexOf('ma_cha') + 1, cMe = hd.indexOf('ma_me') + 1;
+      var c1 = e.range.getColumn(), c2 = e.range.getLastColumn(), cCha = hd.indexOf('ma_cha') + 1, cMe = hd.indexOf('ma_me') + 1, cTen = hd.indexOf('ho_ten') + 1;
+      if (cTen >= c1 && cTen <= c2) { // gõ tên → tự viết hoa
+        var oTen = sh.getRange(e.range.getRow(), cTen, e.range.getNumRows(), 1), gt = oTen.getValues();
+        var hoa = gt.map(function (r) { return [String(r[0] || '').replace(/\s+/g, ' ').trim().toUpperCase()]; });
+        if (JSON.stringify(hoa) !== JSON.stringify(gt)) oTen.setValues(hoa);
+      }
       if ((cCha >= c1 && cCha <= c2) || (cMe >= c1 && cMe <= c2)) tuDienChaMe_(sh, e.range.getRow(), e.range.getLastRow());
     }
     finally { lock.releaseLock(); }

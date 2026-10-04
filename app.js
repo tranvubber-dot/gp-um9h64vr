@@ -724,6 +724,12 @@
     var m = raw.split(/[,;]/).map(maTu).filter(function (x) { return ds.indexOf(x) >= 0; })[0];
     return m || '?'; // '?' = ô đang ghi sai → chọn lại sẽ được ghi đè
   }
+  // Ô họ tên: gõ tới đâu viết hoa tới đó
+  document.addEventListener('input', function (e) {
+    var i = e.target; if (!i || i.getAttribute('data-truong') !== 'ho_ten') return;
+    var v = i.value, h = v.toUpperCase(); if (v === h) return;
+    var a = i.selectionStart, b = i.selectionEnd; i.value = h; try { i.setSelectionRange(a, b); } catch (x) {}
+  });
   function moSua(id) {
     var p = DB.byId[id]; if (!p) return;
     if (LA_MAU) { bao('Chỉ sửa được khi app đã nối Google Sheet'); return; }
@@ -807,6 +813,7 @@
       if (v === cu && laSua) return;
       if (!laSua && !v) return;
       if (!them && !v && !LH && /^(dien_thoai|zalo|facebook)$/.test(i.dataset.truong)) return; // liên lạc đang ẩn: trống = giữ nguyên
+      if (i.dataset.truong === 'ho_ten') { v = v.replace(/\s+/g, ' ').toUpperCase(); if (v === cu.toUpperCase() && laSua) return; }
       truong[i.dataset.truong] = v; co = true;
     });
     if (them && them !== 'ho' && !truong.ho_ten) { bao('Nhập họ và tên'); $('#noiDungNgan [data-truong="ho_ten"]').focus(); return; }
