@@ -154,7 +154,7 @@ function capMaSua() {
 
 /* ---------- ĐĂNG NHẬP: "Bạn là ai, con ai?" — chỉ người có tên trong bảng mới vào được ----------
    Bật/tắt bằng menu 🌳 Gia phả → 🔒 Bật / tắt bắt đăng nhập (Script Property BAT_DANG_NHAP). */
-function batDangNhap_() { return PropertiesService.getScriptProperties().getProperty('BAT_DANG_NHAP') === '1'; }
+function batDangNhap_() { return PropertiesService.getScriptProperties().getProperty('BAT_DANG_NHAP') !== '0'; } // mặc định BẬT (bắt buộc đăng nhập)
 function biMat_() {
   var p = PropertiesService.getScriptProperties(), s = p.getProperty('BI_MAT');
   if (!s) { s = Utilities.getUuid() + Utilities.getUuid(); p.setProperty('BI_MAT', s); }
