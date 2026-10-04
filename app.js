@@ -760,19 +760,23 @@
     $('#nutLuuSua').onclick = function () { luuSua(id, this); };
   }
   /* Thêm con / vợ-chồng cho 1 người: app tự điền cha mẹ, con thứ, mã */
-  function moThem(id, loai) {
+  function moThem(id, loai, vuaThem) {
     var p = DB.byId[id]; if (!p) return;
     if (LA_MAU) { bao('Chỉ thêm được khi app đã nối Google Sheet'); return; }
     var laCon = loai === 'con', vc = p.voChong.slice();
     var tieuDe = laCon ? 'Thêm con của ' + esc(p.ten) : 'Thêm ' + (p.gioi === 'nu' ? 'chồng' : 'vợ') + ' của ' + esc(p.ten);
     var h = '<div class="ct-dau">' + cham(p) + '<div><h3>' + tieuDe + '</h3><p class="phu">Mã, cha mẹ' + (laCon ? ', con thứ' : '') + ' tự điền.</p></div></div>';
+    if (vuaThem) {
+      var dsCon = p.con.length ? p.con : DB.list.filter(function (c) { return c.cha === p.id || c.me === p.id; });
+      h += '<div class="vua-them">✓ Đã thêm <b>' + esc(vuaThem) + '</b>. Gõ tiếp người con thứ ' + (dsCon.length + 1) + ', hoặc bấm <b>Xong</b>.</div>';
+    }
     if (laCon && vc.length > 1) h += '<label class="o-sua"><span>Con với</span><select id="themBan">' + vc.map(function (s) { return '<option value="' + esc(s) + '">' + esc(DB.byId[s].ten) + '</option>'; }).join('') + '</select></label>';
     h += oSua('ho_ten', 'Họ và tên', '', 'text', laCon ? 'Trần Văn …' : '');
     h += oGioi(laCon ? 'Nam' : (p.gioi === 'nu' ? 'Nam' : 'Nữ'));
     h += '<div class="hai-o">' + oSua('ngay_sinh', 'Năm / ngày sinh', '', 'text', '1990') + oSua('ngay_mat', 'Năm / ngày mất', '', 'text', 'để trống') + '</div>';
     h += oSua('ngay_gio', 'Ngày giỗ (âm lịch)', '', 'text', 'chỉ khi đã mất, ví dụ 12/3');
     h += oMatMa();
-    h += '<div class="hang-nut" style="margin-top:14px"><button class="nut chinh" id="nutLuuSua">＋ Thêm vào gia phả</button><button class="nut" data-di="huySua">Huỷ</button></div>';
+    h += '<div class="hang-nut" style="margin-top:14px"><button class="nut chinh" id="nutLuuSua">＋ Thêm vào gia phả</button><button class="nut" data-di="huySua">' + (vuaThem ? 'Xong' : 'Huỷ') + '</button></div>';
     $('#noiDungNgan').innerHTML = h;
     $('#nganKeo').scrollTop = 0;
     var oTen = $('#noiDungNgan [data-truong="ho_ten"]'), oGt = $('#noiDungNgan [data-truong="gioi_tinh"]');
@@ -828,7 +832,15 @@
         if (them === 'ho') { bao('Đã lưu gốc gác dòng họ ✓'); return taiDuLieu(true).then(function (m) { RAW = m; dungLai(true); moGocGac(); }); }
         bao(them ? 'Đã thêm ' + truong.ho_ten + ' ✓' : 'Đã lưu lên gia phả ✓');
         var moi = them ? d.ma : id;
-        return taiDuLieu(true).then(function (m) { RAW = m; dungLai(true); if (DB.byId[moi]) { moChiTiet(moi); canhGiua(moi, true); } });
+        return taiDuLieu(true).then(function (m) {
+          RAW = m; dungLai(true);
+          if (them && them.loai === 'con' && DB.byId[them.goc]) { // thêm con liên tục: mở lại form cho người con sau
+            moThem(them.goc, 'con', truong.ho_ten);
+            if (them.banDoi && $('#themBan')) $('#themBan').value = them.banDoi;
+            return;
+          }
+          if (DB.byId[moi]) { moChiTiet(moi); canhGiua(moi, true); }
+        });
       })
       .catch(function (e) {
         bao(e && e.message && !/fetch|network/i.test(e.message) ? e.message : 'Không kết nối được. Thử lại khi có mạng.');

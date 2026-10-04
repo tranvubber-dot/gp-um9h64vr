@@ -689,3 +689,4 @@ html[data-nen="luonglong"] .hoa-van { background-size: 100% auto !important; bac
 /* Giao diện cố định sáng/tối: màu thẻ theo giao diện, không theo chế độ tối của máy */
 html[data-nen="luonglong"] { --ns1: #edfaf1; --ns2: #d3f1dd; --nsv: #9fd8b1; --nv1: #f3f2f5; --nv2: #dfdde4; --nvv: #b8b4c0; --bong-the: rgba(110, 70, 20, .14); }
 html[data-nen="rongphuong"], html[data-nen="sonmai"] { --ns1: #1d3a2a; --ns2: #14301f; --nsv: #2f6b46; --nv1: #2c2b31; --nv2: #232228; --nvv: #4d4a55; }
+.vua-them { margin: 12px 0 4px; padding: 10px 14px; border-radius: 14px; background: rgba(46, 160, 90, .14); color: var(--chu); font-size: 14px; animation: noi-len .4s ease both; }
