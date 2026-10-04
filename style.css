@@ -713,3 +713,12 @@ html[data-nen="rongphuong"] .noi, html[data-nen="sonmai"] .noi { stroke: #f0b84a
 @keyframes hao-quang { 0%, 100% { opacity: .5; transform: scale(.99); } 50% { opacity: .95; transform: scale(1.06); } }
 @media (prefers-reduced-motion: reduce) { .hao-quang { animation: none; } }
 .the.chon:not(.toi) .nen { stroke: var(--nhan) !important; }
+/* Hào quang khung cụ Tổ */
+.hao-to { pointer-events: none; }
+.tia-xoay { opacity: .55; animation: tia-xoay 30s linear infinite; }
+@keyframes tia-xoay { to { transform: rotate(360deg); } }
+.quang-to { animation: quang-to 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes quang-to { 0%, 100% { opacity: .65; transform: scale(.96); } 50% { opacity: 1; transform: scale(1.08); } }
+.lap-lanh { transform-box: fill-box; transform-origin: center; animation: lap-lanh 2.2s ease-in-out infinite; opacity: 0; }
+@keyframes lap-lanh { 0%, 100% { opacity: 0; scale: .3; } 45% { opacity: 1; scale: 1.15; } 60% { opacity: .9; scale: .9; } }
+@media (prefers-reduced-motion: reduce) { .tia-xoay, .quang-to, .lap-lanh { animation: none; } .lap-lanh { opacity: .8; } }
