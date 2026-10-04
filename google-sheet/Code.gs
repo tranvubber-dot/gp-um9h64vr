@@ -200,6 +200,9 @@ function kiemVe_(ve) { // vé = "T005.<hạn>.<chữ ký>"; người bị xoá k
 var TAB_DN = 'Đăng nhập', COT_DN = ['Mã', 'Họ tên', 'Điện thoại', 'Mã đăng nhập', 'Gửi mã', 'Quyền', 'Lần đầu vào', 'Lần cuối dùng', 'Số lần'];
 var LINK_APP_ = 'https://tranvubber-dot.github.io/gp-um9h64vr/';
 function chuSo_(x) { var d = String(x || '').replace(/\D/g, ''); if (/^84\d{9}$/.test(d)) d = '0' + d.slice(2); return d; }
+function dsSo_(x) { // một ô có thể ghi nhiều số: "0912…, 0987…" → mảng số đã chuẩn hoá
+  return String(x || '').split(/[,;\/|\n]+/).map(chuSo_).filter(function (d) { return d.length >= 9; });
+}
 function soDangNhap_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet(), sh = ss.getSheetByName(TAB_DN);
   if (sh && sh.getRange(1, 3).getDisplayValue() === 'Điện thoại') return sh;
@@ -226,7 +229,8 @@ function dongBoDangNhap_() {
   v.forEach(function (r, i) { if (r[0]) dong[r[0]] = i + 2; });
   var maDung = {}; v.forEach(function (r) { if (r[3]) maDung[r[3]] = 1; });
   Object.keys(b.dongCua).forEach(function (m) {
-    var sdt = chuSo_(b.v[b.dongCua[m] - 1][cDt]); if (sdt.length < 9) return;
+    var cacSo = dsSo_(b.v[b.dongCua[m] - 1][cDt]); if (!cacSo.length) return;
+    var sdt = cacSo.join(', ');
     var d = dong[m];
     if (!d) {
       var ma; do { ma = String(Math.floor(100000 + Math.random() * 900000)); } while (maDung[ma]); maDung[ma] = 1;
@@ -239,7 +243,7 @@ function dongBoDangNhap_() {
       if (!r[3]) { var mm; do { mm = String(Math.floor(100000 + Math.random() * 900000)); } while (maDung[mm]); maDung[mm] = 1; sh.getRange(d, 4).setNumberFormat('@').setValue(mm); }
     }
     var maDN = sh.getRange(d, 4).getDisplayValue();
-    sh.getRange(d, 5).setRichTextValue(SpreadsheetApp.newRichTextValue().setText('💬 Gửi mã Zalo').setLinkUrl(linkGuiMa_(sdt, maDN, b.tenCua[m])).build());
+    sh.getRange(d, 5).setRichTextValue(SpreadsheetApp.newRichTextValue().setText('💬 Gửi mã Zalo').setLinkUrl(linkGuiMa_(cacSo[0], maDN, b.tenCua[m])).build());
   });
 }
 function dongDangNhap_(ma) { // số dòng của người này trong tab, hoặc 0
@@ -271,7 +275,7 @@ function dangNhapSdt_(body, cd) {
   var lock = LockService.getDocumentLock(); lock.waitLock(20000);
   try { dongBoDangNhap_(); } finally { lock.releaseLock(); }
   var sh = soDangNhap_(), n = sh.getLastRow(), v = n > 1 ? sh.getRange(2, 1, n - 1, COT_DN.length).getDisplayValues() : [];
-  var r = v.filter(function (x) { return chuSo_(x[2]) === sdt; });
+  var r = v.filter(function (x) { return dsSo_(x[2]).indexOf(sdt) >= 0; });
   if (!r.length) { cd.tang(); return json_({ ok: false, loi: 'Số này chưa có trong gia phả. Nhờ người quản lý gia phả ghi số của bạn vào bảng.' }); }
   var dung = r.filter(function (x) { return String(x[3]).trim() === maDN; })[0];
   if (!dung) { cd.tang(); return json_({ ok: false, loi: 'Mã đăng nhập chưa đúng.' }); }
@@ -288,7 +292,7 @@ function layMaDN_(body, cd) {
   var lock = LockService.getDocumentLock(); lock.waitLock(20000);
   try { dongBoDangNhap_(); } finally { lock.releaseLock(); }
   var sh = soDangNhap_(), n = sh.getLastRow(), v = n > 1 ? sh.getRange(2, 1, n - 1, COT_DN.length).getDisplayValues() : [];
-  var r = v.filter(function (x) { return chuSo_(x[2]) === sdt; })[0];
+  var r = v.filter(function (x) { return dsSo_(x[2]).indexOf(sdt) >= 0; })[0];
   if (!r) { cd.tang(); return json_({ ok: false, loi: 'Số này chưa có trong gia phả. Nhờ người quản lý gia phả ghi số của bạn vào bảng.' }); }
   if (/chặn/i.test(r[5])) return json_({ ok: false, loi: 'Bạn đang bị tạm khoá. Liên hệ người quản lý gia phả để được mở lại.' });
   return json_({ ok: true, maDN: r[3], ten: r[1] });

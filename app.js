@@ -656,6 +656,7 @@
   }
   function dong(nhan, gt) { return gt ? '<dt>' + nhan + '</dt><dd>' + gt + '</dd>' : ''; }
   function laLink(s) { return /^https?:\/\//i.test(s); }
+  function cacSoDT(s) { return String(s || '').split(/[,;\/|\n]+/).map(function (x) { return x.trim(); }).filter(function (x) { return x.replace(/\D/g, '').length >= 6; }); }
 
   function moChiTiet(id) {
     var p = DB.byId[id]; if (!p) return;
@@ -710,7 +711,8 @@
     var L = p.lienHe, coLH = L.dienThoai || L.zalo || L.facebook;
     if (coLH) {
       h += '<div class="muc-ct"><h4>Liên lạc</h4><div class="lien-he">';
-      if (L.dienThoai) h += '<a href="tel:' + esc(L.dienThoai.replace(/[^\d+]/g, '')) + '"><svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Gọi điện</a>';
+      var cacSo = cacSoDT(L.dienThoai);
+      cacSo.forEach(function (so, i) { h += '<a href="tel:' + esc(so.replace(/[^\d+]/g, '')) + '"><svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>' + (cacSo.length > 1 ? 'Gọi ' + esc(so) : 'Gọi điện') + '</a>'; });
       if (L.zalo) h += '<a class="zalo" href="https://zalo.me/' + esc(String(L.zalo).replace(/[^\d]/g, '')) + '" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h4l-4 4h4M15 9v4"/></svg>Zalo</a>';
       if (L.facebook) h += '<a class="fb" href="' + esc(laLink(L.facebook) ? L.facebook : 'https://www.facebook.com/' + L.facebook) + '" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 8h3V4h-3a4 4 0 0 0-4 4v3H7v4h3v6h4v-6h3l1-4h-4V8z"/></svg>Facebook</a>';
       h += '</div></div>';
@@ -795,7 +797,11 @@
     h += '<div class="hai-o">' + oSua('que_quan', 'Quê quán', p.queQuan) + oSua('chuc_danh', 'Học vị, chức danh', p.chucDanh) + '</div>';
     var songCu = !(r.ngay_mat || r.ngay_gio || p.daMat);
     h += '<div id="oLienHe"' + (songCu ? '' : ' hidden') + '><h4 class="nhom-sua">Liên lạc</h4>';
-    h += '<div class="hai-o">' + oSua('dien_thoai', 'Điện thoại', L.dienThoai, 'tel', '09…') + oSua('zalo', 'Zalo (số)', L.zalo, 'tel', '') + '</div>';
+    var soCu = cacSoDT(L.dienThoai);
+    h += '<div class="o-sua nhieu-so"><span>Điện thoại <small class="phu">(bấm ＋ để thêm số thứ 2, 3)</small></span><input type="hidden" data-truong="dien_thoai" data-cu="' + esc(soCu.join(', ')) + '" value="' + esc(soCu.join(', ')) + '">' +
+      '<div id="dsSo">' + (soCu.length ? soCu : ['']).map(function (so) { return '<div class="dong-so"><input type="tel" class="o-so" value="' + esc(so) + '" placeholder="09…" autocomplete="off"><button type="button" class="xoa-so" aria-label="Xoá số">✕</button></div>'; }).join('') + '</div>' +
+      '<button type="button" class="nut nho them-so" id="themSo">＋ Thêm số điện thoại</button></div>';
+    h += oSua('zalo', 'Zalo (số)', L.zalo, 'tel', '');
     h += oSua('facebook', 'Facebook', L.facebook, 'url', 'link hoặc tên tài khoản') + oSua('noi_o', 'Nơi ở', p.noiO, 'text', '');
     if (!LH) h += '<p class="phu" style="margin:-4px 2px 10px">Chưa tải được liên lạc. Ô nào để trống sẽ giữ nguyên như cũ.</p>';
     h += '</div>';
@@ -804,8 +810,19 @@
     $('#noiDungNgan').innerHTML = h;
     $('#nganKeo').scrollTop = 0;
     ganConSong();
+    var gomSo = function () { $('#noiDungNgan [data-truong="dien_thoai"]').value = [].map.call(document.querySelectorAll('#dsSo .o-so'), function (i) { return i.value.trim(); }).filter(Boolean).join(', '); };
+    $('#dsSo').addEventListener('input', gomSo);
+    $('#dsSo').addEventListener('click', function (e) {
+      var x = e.target.closest('.xoa-so'); if (!x) return;
+      var hang = x.closest('.dong-so'); if (document.querySelectorAll('#dsSo .dong-so').length > 1) hang.remove(); else hang.querySelector('input').value = ''; gomSo();
+    });
+    $('#themSo').onclick = function () {
+      if (document.querySelectorAll('#dsSo .dong-so').length >= 5) { bao('Tối đa 5 số'); return; }
+      var d = document.createElement('div'); d.className = 'dong-so'; d.innerHTML = '<input type="tel" class="o-so" placeholder="Số thứ ' + (document.querySelectorAll('#dsSo .dong-so').length + 1) + '" autocomplete="off"><button type="button" class="xoa-so" aria-label="Xoá số">✕</button>';
+      $('#dsSo').appendChild(d); d.querySelector('input').focus();
+    };
     var apKhoa = function (k) { // khoá: mọi ô chỉ xem, ẩn nút lưu
-      $('#noiDungNgan').querySelectorAll('[data-truong], #suaFile, #conSong').forEach(function (x) { x.disabled = k; });
+      $('#noiDungNgan').querySelectorAll('[data-truong], #suaFile, #conSong, .o-so, .xoa-so, #themSo').forEach(function (x) { x.disabled = k; });
       $('#nutLuuSua').hidden = k; $('#noiDungNgan').classList.toggle('dang-khoa', k);
     };
     apKhoa(dangKhoa);
@@ -987,7 +1004,7 @@
     $('#demKQ').textContent = ds.length + ' người';
     $('#dsNguoi').innerHTML = ds.map(function (p, i) {
       var nh = p.dich ? '<span class="nhan son">Đích</span>' : (chuNam(p) ? '<span class="nhan">' + esc(chuNam(p)) + '</span>' : '');
-      if (p.lienHe.dienThoai) nh = '<a class="nhan son" href="tel:' + esc(p.lienHe.dienThoai.replace(/[^\d+]/g, '')) + '" onclick="event.stopPropagation()">Gọi</a>' + nh;
+      if (p.lienHe.dienThoai) nh = '<a class="nhan son" href="tel:' + esc((cacSoDT(p.lienHe.dienThoai)[0] || '').replace(/[^\d+]/g, '')) + '" onclick="event.stopPropagation()">Gọi</a>' + nh;
       return '<li style="--i:' + Math.min(i, 14) + '" data-mo="' + esc(p.id) + '" class="' + (p.daMat ? 'tt-mat' : 'tt-song') + '">' + cham(p) + '<div class="chu"><div class="ten">' + esc(p.ten) + '</div><div class="mo">' +
         esc([TOI && (p.id === TOI ? 'Bạn' : XH_TOI[p.id] && hoa(XH_TOI[p.id].goi)), 'Đời ' + p.doi, tenChi(p), moTaNgan(p)].filter(Boolean).join(' · ')) + '</div></div>' + nh + '</li>';
     }).join('') || '<li class="phu">Không tìm thấy ai.</li>';

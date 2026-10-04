@@ -884,3 +884,9 @@ html[data-nen="luonglong"] { --chu-vang: #8a5a0c; --chu-vang2: #a8761c; }
 .giai-ma { margin: 4px 0 12px; padding: 10px 12px; border-radius: 12px; background: rgba(66, 133, 244, .1); border: 1px solid rgba(66, 133, 244, .25); font-size: 13.5px; line-height: 1.55; }
 .giai-dn { text-align: left; margin: 10px 0 4px; font-size: 13.5px; line-height: 1.5; }
 .qt-moi .phu { font-size: 12.5px; }
+/* Nhiều số điện thoại */
+.nhieu-so > span { display: block; font-size: 13px; color: var(--chu2); margin: 0 0 5px 2px; }
+.dong-so { display: flex; gap: 6px; margin-bottom: 6px; }
+.dong-so input { flex: 1; min-width: 0; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--kinh-vien); background: var(--kinh-dam); color: inherit; font: inherit; font-size: 16px; outline: none; }
+.xoa-so { flex: none; width: 40px; border: 0; border-radius: 12px; background: var(--vach); color: var(--chu2); font-size: 15px; cursor: pointer; }
+.them-so { margin: 2px 0 12px; }
