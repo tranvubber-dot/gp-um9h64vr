@@ -1242,14 +1242,14 @@
           bao('Đang kiểm tra quyền quản trị…');
           fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ k: doc('khoa', null), lenh: 'dangNhapGoogle', idToken: res.credential }) })
             .then(function (r) { return r.json(); })
-            .then(function (d) { if (!d || !d.ok) throw new Error(d && d.loi || 'Không đăng nhập được'); ghi('veQT', d.veQT); ghi('qtEmail', d.email); bao('🛡️ Đã vào quản trị: ' + d.email); veQuanTri(); })
+            .then(function (d) { if (!d || !d.ok) throw new Error(d && d.loi || 'Không đăng nhập được'); ghi('veQT', d.veQT); ghi('qtEmail', d.email); ghi('qtTen', d.ten || ''); bao('🛡️ Chào ' + (d.ten || d.email) + '!'); veQuanTri(); })
             .catch(function (e) { bao(e.message || 'Không đăng nhập được'); });
         } });
         var n = $('#nutGoogle'); if (n) google.accounts.id.renderButton(n, { theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with', locale: 'vi' });
       });
       return;
     }
-    k.innerHTML = '<h2>🛡️ Quản trị</h2><p class="phu">Đang đăng nhập: <b>' + esc(doc('qtEmail', '')) + '</b> · <span class="lien-ket" id="qtThoat">Đăng xuất quản trị</span></p>' +
+    k.innerHTML = '<h2>🛡️ Quản trị</h2><div class="qt-ai"><span class="qt-chu">' + esc((doc('qtTen', '') || doc('qtEmail', '?')).charAt(0).toUpperCase()) + '</span><div><b>' + esc(doc('qtTen', '') || doc('qtEmail', '')) + '</b><small>' + esc(doc('qtEmail', '')) + '</small></div><span class="lien-ket" id="qtThoat">Đăng xuất</span></div>' +
       '<div class="chon-dn qt-tab"><button type="button" data-qt="ma"' + (QT.tab === 'ma' ? ' class="chon"' : '') + '>🔑 Mã chỉnh sửa</button><button type="button" data-qt="dn"' + (QT.tab === 'dn' ? ' class="chon"' : '') + '>📱 Đăng nhập</button></div>' +
       '<div id="qtNoi"><p class="phu">Đang tải…</p></div>';
     $('#qtThoat').onclick = function () { ghi('veQT', null); ghi('qtEmail', null); QT.dl = null; veQuanTri(); bao('Đã đăng xuất quản trị'); };
@@ -1257,9 +1257,20 @@
     var ve = function () {
       var d = QT.dl, n = $('#qtNoi'); if (!n || !d) return;
       if (QT.tab === 'ma') {
-        n.innerHTML = '<div class="qt-cap"><input id="qtTen" placeholder="Tên người được cấp (VD: Anh Chính)"><select id="qtLoai"><option value="sua">Chỉnh sửa</option><option value="tin">Chỉ đăng tin</option></select><button class="nut chinh" id="qtCap">Cấp mã</button></div><div id="qtKetQua"></div>' +
+        n.innerHTML = '<div class="qt-cap"><div class="o-goi-y"><input id="qtTen" placeholder="Gõ tên người được cấp, VD: chinh" autocomplete="off"><ul class="goi-y" id="qtGoiY" hidden></ul></div><select id="qtLoai"><option value="sua">Chỉnh sửa</option><option value="tin">Chỉ đăng tin</option></select><button class="nut chinh" id="qtCap">Cấp mã</button></div><div id="qtKetQua"></div>' +
           (d.quyenSua.length ? '<ul class="qt-ds">' + d.quyenSua.map(function (q) {
             return '<li><div><b>' + esc(q.ten) + '</b><span class="phu">' + esc(q.loai) + ' · ' + esc(q.cap || '') + '</span></div><code>' + esc(q.ma) + '</code><button class="nut nho" data-thuhoi="' + esc(q.ma) + '">Thu hồi</button></li>'; }).join('') + '</ul>' : '<p class="phu">Chưa cấp mã cho ai.</p>');
+        // gợi ý tên đầy đủ từ gia phả (gõ không dấu cũng được)
+        var bd = function (x) { return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase(); };
+        var oT = $('#qtTen'), gy = $('#qtGoiY');
+        oT.oninput = function () {
+          var q = bd(oT.value.trim()); if (!q) { gy.hidden = true; return; }
+          var ds = DB.list.filter(function (p) { return !p.daMat && bd(p.ten).indexOf(q) >= 0; }).slice(0, 6);
+          gy.innerHTML = ds.map(function (p) { return '<li data-ten="' + esc(p.ten) + '">' + cham(p) + '<div><b>' + esc(p.ten) + '</b><small>Đời ' + p.doi + (moTaNgan(p) ? ' · ' + esc(moTaNgan(p)) : '') + '</small></div></li>'; }).join('');
+          gy.hidden = !ds.length;
+        };
+        gy.onclick = function (e) { var li = e.target.closest('[data-ten]'); if (!li) return; oT.value = li.getAttribute('data-ten'); gy.hidden = true; };
+        oT.onblur = function () { setTimeout(function () { gy.hidden = true; }, 200); };
         $('#qtCap').onclick = function () {
           var ten = $('#qtTen').value.trim(), loai = $('#qtLoai').value, nut = this; if (!ten) { bao('Gõ tên người được cấp'); $('#qtTen').focus(); return; }
           nut.disabled = true;

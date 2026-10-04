@@ -868,3 +868,16 @@ html[data-nen="luonglong"] { --chu-vang: #8a5a0c; --chu-vang2: #a8761c; }
 .qt-moi b { font-size: 30px; letter-spacing: .2em; color: var(--nhan); }
 .khoa-gat { padding: 10px 12px; border-radius: 14px; background: var(--vach); }
 .dang-khoa .o-sua input, .dang-khoa .o-sua textarea, .dang-khoa .o-sua select { opacity: .55; }
+/* Quản trị: tên người đăng nhập + gợi ý tên */
+.qt-ai { display: flex; align-items: center; gap: 10px; margin: 6px 0 4px; padding: 10px 12px; border-radius: 14px; background: var(--vach); }
+.qt-ai > div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.qt-ai small { color: var(--chu3); font-size: 12px; overflow-wrap: anywhere; }
+.qt-chu { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #4285f4, #34a853); color: #fff; font-weight: 800; flex: none; }
+.o-goi-y { position: relative; grid-column: 1 / -1; }
+.o-goi-y input { width: 100%; }
+.goi-y { position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px); list-style: none; margin: 0; padding: 6px; border-radius: 14px; background: var(--the); border: 1px solid var(--kinh-vien); box-shadow: 0 12px 30px rgba(0, 0, 0, .3); max-height: 300px; overflow: auto; }
+.goi-y li { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; cursor: pointer; }
+.goi-y li:active, .goi-y li:hover { background: var(--vach); }
+.goi-y li > div { display: flex; flex-direction: column; min-width: 0; }
+.goi-y small { font-size: 12px; color: var(--chu2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.goi-y .cham { width: 32px; height: 32px; font-size: 13px; }
