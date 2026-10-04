@@ -941,3 +941,17 @@ html.xoay-ngang[data-nen="rongphuong"] .hoa-van {
   .dieu-khien { bottom: calc(10px + env(safe-area-inset-bottom)) !important; }
   .chu-giai { bottom: calc(10px + env(safe-area-inset-bottom)) !important; }
 }
+
+/* Chú giải: các mục thẳng hàng, biểu tượng cùng cỡ; màn hẹp dọc → lưới 2×2 đều, xem ngang → một hàng */
+.chu-giai { align-items: center; }
+.chu-giai > span { display: inline-flex !important; align-items: center; gap: 5px; white-space: nowrap; line-height: 1.2; }
+.chu-giai .o-mau { flex: none; width: 13px !important; height: 10px !important; margin: 0 !important; vertical-align: 0 !important; box-sizing: border-box; }
+.chu-giai .o-mau.dr { border-radius: 3px; }
+.chu-giai .o-mau.dich { display: inline-flex; align-items: center; justify-content: center; }
+.chu-giai .o-mau.dich::before { font-size: 12px; line-height: 1; }
+@media (max-width: 640px) and (orientation: portrait) {
+  html:not(.xoay-ngang) .chu-giai { display: grid !important; grid-template-columns: auto auto; gap: 4px 12px; }
+}
+.xoay-ngang .chu-giai, html:not(.xoay-ngang) .chu-giai { flex-wrap: nowrap; }
+@media (orientation: landscape) and (max-height: 520px) { .chu-giai { max-width: none !important; } }
+.xoay-ngang .chu-giai { display: flex !important; flex-wrap: nowrap !important; max-width: none !important; gap: 12px; }
