@@ -747,7 +747,7 @@
     c.onchange = function () { $('#oMat').hidden = this.checked; var l = $('#oLienHe'); if (l) l.hidden = !this.checked; };
   }
   function oMatMa() {
-    return '<label class="o-sua"><span>Mật mã sửa</span><input id="suaMa" type="password" value="' + esc(doc('maSua', '') || '') + '" placeholder="Trưởng họ cấp cho bạn" autocomplete="off"></label>';
+    return '<label class="o-sua"><span>Mật mã sửa</span><input id="suaMa" type="password" value="' + esc(doc('maSua', '') || '') + '" placeholder="Người quản lý gia phả cấp cho bạn" autocomplete="off"></label>';
   }
   function quanHeCu(id, k) { // mã đang ghi ở dòng này, chỉ khi nó trỏ đúng người (bỏ mã cũ sai)
     var r = dongGoc(id), raw = String(r[k] || '').trim(); if (!raw) return '';
@@ -841,7 +841,7 @@
   }
   function luuSua(id, nut, them) {
     var ma = $('#suaMa').value.trim();
-    if (!ma) { bao('Nhập mật mã sửa (trưởng họ cấp)'); $('#suaMa').focus(); return; }
+    if (!ma) { bao('Nhập mật mã sửa (người quản lý cấp)'); $('#suaMa').focus(); return; }
     var truong = {}, co = !!ANH_MOI && !them;
     $('#noiDungNgan').querySelectorAll('[data-truong]').forEach(function (i) {
       var v = i.value.trim(), cu = i.getAttribute('data-cu') || '';
@@ -1348,7 +1348,9 @@
     var ngayDS = function (s) { var m = String(s || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? +m[3] * 1e4 + +m[2] * 100 + +m[1] : 0; };
     return ds.sort(function (a, b) { return (b.ghim - a.ghim) || (ngayDS(b.ngay) - ngayDS(a.ngay)); });
   }
+  function tenNhanh() { return DB && DB.thuyTo ? 'Ông ' + DB.thuyTo.ten : 'dòng họ'; }
   function veBangTin() {
+    $('#tinNhanh').textContent = 'CON CHÁU ' + tenNhanh().toUpperCase();
     var ds = dsTin(), daXem = doc('tinDaXem', []), moi = ds.filter(function (t) { return daXem.indexOf(khoaTin(t)) < 0; }).length;
     var so = $('#soTin'); so.hidden = !moi || $('#tab-tin').classList.contains('hien'); so.textContent = moi;
     $('#tinPhuDe').textContent = ds.length ? ds.length + ' thông báo' + (ds[0] ? ' · mới nhất ' + ds[0].ngay : '') : 'Chưa có thông báo';
@@ -1446,7 +1448,7 @@
       m.innerHTML = '<div class="hop-toi kinh"><div>' +
         '<button class="x-dn" id="dongDN" aria-label="Đóng" hidden>×</button>' +
         '<div class="an-trien lon" aria-hidden="true">陳</div><h2>Đăng nhập gia phả</h2>' +
-        '<p class="phu">🔒 Chỉ con cháu có số điện thoại trong gia phả mới vào được.</p>' +
+        '<p class="phu">🔒 Chỉ con cháu ' + esc(tenNhanh()) + ' có số điện thoại trong gia phả mới vào được.</p>' +
         '<div class="chon-dn" hidden><button type="button" data-dn="sdt" class="chon">📱 Số điện thoại</button><button type="button" data-dn="ten">👪 Bạn là con ai?</button></div>' +
         '<form id="formSdt" class="form-dn">' +
         '<label class="o-sua"><span>Số điện thoại của bạn</span><input id="dnSdt" type="tel" inputmode="tel" placeholder="VD: 0943 xxx xxx" autocomplete="tel"></label>' +

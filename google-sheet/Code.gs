@@ -249,10 +249,10 @@ function dangNhapSdt_(body, cd) {
   try { dongBoDangNhap_(); } finally { lock.releaseLock(); }
   var sh = soDangNhap_(), n = sh.getLastRow(), v = n > 1 ? sh.getRange(2, 1, n - 1, COT_DN.length).getDisplayValues() : [];
   var r = v.filter(function (x) { return chuSo_(x[2]) === sdt; });
-  if (!r.length) { cd.tang(); return json_({ ok: false, loi: 'Số này chưa có trong gia phả. Nhờ trưởng họ ghi số của bạn vào bảng.' }); }
+  if (!r.length) { cd.tang(); return json_({ ok: false, loi: 'Số này chưa có trong gia phả. Nhờ người quản lý gia phả ghi số của bạn vào bảng.' }); }
   var dung = r.filter(function (x) { return String(x[3]).trim() === maDN; })[0];
-  if (!dung) { cd.tang(); return json_({ ok: false, loi: 'Mã đăng nhập chưa đúng. Hỏi trưởng họ mã của bạn.' }); }
-  if (/chặn/i.test(dung[5])) return json_({ ok: false, loi: 'Bạn đang bị trưởng họ tạm khoá. Liên hệ trưởng họ để được mở lại.' });
+  if (!dung) { cd.tang(); return json_({ ok: false, loi: 'Mã đăng nhập chưa đúng.' }); }
+  if (/chặn/i.test(dung[5])) return json_({ ok: false, loi: 'Bạn đang bị tạm khoá. Liên hệ người quản lý gia phả để được mở lại.' });
   var ma = dung[0], b = bang_(); if (!b.dongCua[ma]) return json_({ ok: false, loi: 'Không tìm thấy bạn trong bảng gia phả.' });
   var het = Date.now() + 400 * 864e5;
   ghiDangNhap_(ma, b.tenCua[ma], true);
@@ -266,8 +266,8 @@ function layMaDN_(body, cd) {
   try { dongBoDangNhap_(); } finally { lock.releaseLock(); }
   var sh = soDangNhap_(), n = sh.getLastRow(), v = n > 1 ? sh.getRange(2, 1, n - 1, COT_DN.length).getDisplayValues() : [];
   var r = v.filter(function (x) { return chuSo_(x[2]) === sdt; })[0];
-  if (!r) { cd.tang(); return json_({ ok: false, loi: 'Số này chưa có trong gia phả. Nhờ trưởng họ ghi số của bạn vào bảng.' }); }
-  if (/chặn/i.test(r[5])) return json_({ ok: false, loi: 'Bạn đang bị trưởng họ tạm khoá. Liên hệ trưởng họ để được mở lại.' });
+  if (!r) { cd.tang(); return json_({ ok: false, loi: 'Số này chưa có trong gia phả. Nhờ người quản lý gia phả ghi số của bạn vào bảng.' }); }
+  if (/chặn/i.test(r[5])) return json_({ ok: false, loi: 'Bạn đang bị tạm khoá. Liên hệ người quản lý gia phả để được mở lại.' });
   return json_({ ok: true, maDN: r[3], ten: r[1] });
 }
 /* Menu: tạo mã cho mọi người có SĐT + mở tab */
@@ -290,7 +290,7 @@ function khopTen_(go, ten) { // gõ "Chính" hay "Trần Đình Chính" đều k
   return !!go && (go === ten || (' ' + ten).slice(-(go.length + 1)) === ' ' + go);
 }
 function dangNhap_(body, cd) {
-  if (PropertiesService.getScriptProperties().getProperty('CHO_DN_TEN') !== '1') return json_({ ok: false, loi: 'Hãy đăng nhập bằng số điện thoại và mã do trưởng họ gửi.' });
+  if (PropertiesService.getScriptProperties().getProperty('CHO_DN_TEN') !== '1') return json_({ ok: false, loi: 'Hãy đăng nhập bằng số điện thoại.' });
   var b = bang_(), ten = String(body.ten || '').trim(), conAi = String(body.conAi || '').trim(), nam = String(body.namSinh || '').trim();
   if (!ten || !conAi) return json_({ ok: false, loi: 'Gõ tên bạn và tên cha/mẹ (hoặc vợ/chồng)' });
   var cMat = b.cot.indexOf('ngay_mat'), cDm = b.cot.indexOf('da_mat'), cGio = b.cot.indexOf('ngay_gio');
@@ -302,10 +302,10 @@ function dangNhap_(body, cd) {
     if (!than.some(function (x) { return x && b.tenCua[x] && khopTen_(conAi, b.tenCua[x]); })) return false;
     return !nam || String(b.o(m, 'ngay_sinh')).indexOf(nam) >= 0;
   });
-  if (!ds.length) { cd.tang(); return json_({ ok: false, loi: 'Không tìm thấy bạn trong gia phả. Kiểm tra lại tên, hoặc nhờ trưởng họ thêm bạn vào bảng.' }); }
+  if (!ds.length) { cd.tang(); return json_({ ok: false, loi: 'Không tìm thấy bạn trong gia phả. Kiểm tra lại tên, hoặc nhờ người quản lý gia phả thêm bạn vào bảng.' }); }
   if (ds.length > 1) return json_({ ok: false, trung: true, loi: 'Có ' + ds.length + ' người trùng. Gõ họ tên đầy đủ hoặc thêm năm sinh.' });
   var ma = ds[0], het = Date.now() + 400 * 864e5;
-  if (biChan_(ma)) return json_({ ok: false, loi: 'Bạn đang bị trưởng họ tạm khoá. Liên hệ trưởng họ để được mở lại.' });
+  if (biChan_(ma)) return json_({ ok: false, loi: 'Bạn đang bị tạm khoá. Liên hệ người quản lý gia phả để được mở lại.' });
   ghiDangNhap_(ma, b.tenCua[ma], true);
   return json_({ ok: true, ve: ma + '.' + het + '.' + ky_(ma + '.' + het), ma: ma, ten: b.tenCua[ma] });
 }
@@ -347,8 +347,8 @@ function soThongBao_() {
   sh.getRange('G2:G500').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['x'], true).setAllowInvalid(true).build());
   sh.getRange('A1').setNote('Mỗi dòng là 1 thông báo trên Bảng tin của app. Xoá dòng = gỡ tin. Cột Ghim ghi x để tin nằm trên cùng.');
   sh.getRange('E1').setNote('Chỉ cho tin "Đóng góp": mức đóng, ví dụ 500.000đ/suất đinh.');
-  sh.appendRow([Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy'), 'Việc họ', 'Khai mở Bảng tin dòng họ',
-    'Từ nay các thông báo của họ (giỗ Tổ, họp họ, đóng góp, hiếu hỷ, khuyến học…) sẽ được đăng tại đây. Con cháu mở app là xem được.', '', '', 'x', 'Ban quản trị']);
+  sh.appendRow([Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy'), 'Việc họ', 'Khai mở Bảng tin con cháu Ông TRẦN ĐÌNH ĐỐI',
+    'Từ nay các thông báo của gia đình (ngày giỗ, họp mặt, đóng góp, hiếu hỷ, khuyến học…) sẽ được đăng tại đây. Con cháu mở app là xem được.', '', '', 'x', 'Ban quản trị']);
   return sh;
 }
 function docThongBao_() {

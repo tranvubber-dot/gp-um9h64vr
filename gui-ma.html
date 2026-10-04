@@ -32,7 +32,7 @@ a.nut, button { display: block; width: 100%; text-align: center; padding: 14px; 
   var q = {}; location.hash.slice(1).split('&').forEach(function (x) { var i = x.indexOf('='); if (i > 0) q[x.slice(0, i)] = decodeURIComponent(x.slice(i + 1)); });
   var sdt = (q.s || '').replace(/[^\d+]/g, ''), ma = (q.m || '').replace(/\D/g, ''), ten = q.t || '';
   var app = location.href.replace(/gui-ma\.html.*$/, '');
-  var nd = 'Mã đăng nhập Gia phả Họ Trần Đình' + (ten ? ' của ' + ten : '') + ': ' + ma + '\nMở app: ' + app + '\nChọn "Số điện thoại", gõ số ' + sdt + ' và mã trên.';
+  var nd = 'Mã đăng nhập Gia phả con cháu Ông Trần Đình Đối' + (ten ? ' của ' + ten : '') + ': ' + ma + '\nMở app: ' + app + '\nChọn "Số điện thoại", gõ số ' + sdt + ' và mã trên.';
   document.getElementById('tieuDe').textContent = ten ? 'Gửi mã cho ' + ten : 'Gửi mã đăng nhập';
   document.getElementById('soDt').textContent = 'Số điện thoại: ' + sdt;
   document.getElementById('ma').textContent = ma;
