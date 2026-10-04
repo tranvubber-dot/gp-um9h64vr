@@ -581,8 +581,8 @@ code { background: var(--vach); padding: 1px 6px; border-radius: 6px; font-size:
 .xoay-ngang .hoa-van { inset: auto; top: 0; left: 100vw; width: 100vh; height: 100vw; transform-origin: top left; transform: rotate(90deg); }
 html.xoay-ngang[data-nen="luonglong"] .hoa-van { background-size: cover !important; background-repeat: no-repeat !important; }
 .xoay-ngang .dau, .xoay-ngang .dai-chu, .xoay-ngang .thanh-duoi, .xoay-ngang .bang-gio, .xoay-ngang .bang-mau { visibility: hidden; }
-.xoay-ngang .dieu-khien { top: auto; bottom: calc(10px + env(safe-area-inset-left)); right: 14px; flex-direction: row; }
-.xoay-ngang .chu-giai { bottom: calc(10px + env(safe-area-inset-left)); }
+.xoay-ngang .dieu-khien { top: auto; bottom: calc(16px + env(safe-area-inset-left)); right: calc(18px + env(safe-area-inset-bottom)); flex-direction: row; }
+.xoay-ngang .chu-giai { bottom: calc(16px + env(safe-area-inset-left)); left: calc(14px + env(safe-area-inset-top)); }
 .xoay-ngang #zXoay { background: var(--grad); color: #fff; }
 @media (min-width: 900px) { #zXoay { display: none; } }
 .xoay-ngang .tab.hien { animation: none !important; transform: none !important; }
@@ -929,3 +929,15 @@ html[data-nen="luonglong"] { --chu-vang: #8a5a0c; --chu-vang2: #a8761c; }
 /* Xưng hô: chọn vùng + chú thích phổ thông */
 .xh-vung { margin-top: 8px; }
 .the-xh .tu-pt { font-size: 12.5px; opacity: .7; margin-top: 2px; }
+
+/* Rồng phượng khi xem ngang: co theo chiều cao màn ngang, không bị cắt */
+html.xoay-ngang[data-nen="rongphuong"] .hoa-van {
+  background-size: auto 60%, auto 78% !important;
+  background-position: right calc(5% + env(safe-area-inset-bottom)) top 30%, left calc(4% + env(safe-area-inset-top)) top 70% !important; }
+@media (orientation: landscape) and (max-height: 520px) {
+  html:not(.xoay-ngang)[data-nen="rongphuong"] .hoa-van {
+    background-size: auto 56%, auto 74% !important;
+    background-position: right calc(var(--phai) + 3%) top 30%, left calc(3% + env(safe-area-inset-left)) top 75% !important; }
+  .dieu-khien { bottom: calc(10px + env(safe-area-inset-bottom)) !important; }
+  .chu-giai { bottom: calc(10px + env(safe-area-inset-bottom)) !important; }
+}

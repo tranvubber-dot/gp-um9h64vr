@@ -639,6 +639,8 @@
     $('#zIn').onclick = function () { var r = khung(); zoomTai(1.3, r.width / 2, r.height / 2); };
     $('#zOut').onclick = function () { var r = khung(); zoomTai(1 / 1.3, r.width / 2, r.height / 2); };
     $('#zXoay').onclick = function () { datXoay(!XOAY); };
+    // điện thoại đã xoay ngang thật (không khoá xoay) → thôi xoay bằng phần mềm, tránh xoay chồng hai lần
+    window.addEventListener('resize', function () { if (XOAY && innerWidth > innerHeight) datXoay(false); });
     $('#zFit').onclick = function () { vuaKhung(true); };
     $('#zToi').onclick = function () {
       if (TOI && DB.byId[TOI]) canhGiua(TOI, true); else moHoiToi();
