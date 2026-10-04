@@ -284,7 +284,7 @@
     return (bo ? (p.ngoaiTon ? 'Cháu ngoại, con bà ' : 'Con ' + (bo.gioi === 'nu' ? 'bà ' : 'ông ')) + bo.ten : (p === DB.thuyTo ? 'Thủy tổ' : ''));
   }
   function cham(p, lop) {
-    var anh = p.anh ? '<img src="' + esc(p.anh) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '';
+    var anh = p.anh && !p.daMat ? '<img src="' + esc(p.anh) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : ''; // người đã mất: không hiện ảnh ngoài, bấm vào mới xem
     return '<span class="cham ' + (p.gioi === 'nu' ? 'nu ' : '') + (p.daMat ? 'mat ' : '') + (lop || '') + '">' + esc(tenGoi(p).charAt(0)) + anh + '</span>';
   }
 
@@ -338,7 +338,7 @@
   }
 
   function veThe(p, x, y, cha) {
-    var lop = 'the ' + (p.gioi === 'nu' ? 'nu' : 'nam') + (p.daMat ? ' mat' : '') + (p.dauRe ? ' dr' : '') + (p.id === chonId ? ' chon' : '') + (p.id === TOI ? ' toi' : '') + (laCuTo(p) ? ' cu-to' : '');
+    var lop = 'the ' + (p.gioi === 'nu' ? 'nu' : 'nam') + (p.daMat ? ' mat' : '') + (p.dauRe ? ' dr' : '') + (p.id === chonId ? ' chon' : '') + (p.id === TOI ? ' toi' : '') + (laCuTo(p) ? ' cu-to' : '') + ((p.daMat || laCuTo(p)) ? ' trang-trong' : '');
     var g = el('g', { 'class': lop, 'data-id': p.id, transform: 'translate(' + x + ',' + y + ')' }, cha);
     var vo = el('g', { 'class': 'vo' }, g);
     if (laCuTo(p)) { // ảnh thờ trong khung vàng, dựng tách phía trên thẻ
@@ -371,7 +371,7 @@
     el('rect', { 'class': 'nen', width: CW, height: CH, rx: 20 }, vo);
     el('rect', { 'class': 'to-mau', x: 1.5, y: 1.5, width: CW - 3, height: CH - 3, rx: 18.5 }, vo);
     // ảnh tròn / chữ cái đầu trên nền chuyển màu
-    var cx = 33, cy = CH / 2, r = 21, coAvatar = !laCuTo(p); // cụ Tổ đã có ảnh thờ trong khung phía trên → bỏ ảnh tròn
+    var cx = 33, cy = CH / 2, r = 21, coAvatar = !(p.daMat || laCuTo(p)); // người đã mất, cụ Tổ: thẻ trang trọng, không ảnh (bấm vào mới xem)
     if (coAvatar) {
     el('circle', { cx: cx, cy: cy, r: r, fill: p.gioi === 'nu' ? 'url(#gNu)' : 'url(#gNam)' }, vo); // màu ảnh theo giới tính; nền thẻ theo tình trạng
     chu(vo, cx, cy + 6, tenGoi(p).charAt(0).toUpperCase(), 'chu-cai').setAttribute('text-anchor', 'middle');
@@ -383,9 +383,9 @@
     }
     el('circle', { 'class': p.daMat ? 'vong-mat' : 'vong-song', cx: cx, cy: cy, r: r + 3.5 }, vo);
     }
-    var tx = coAvatar ? 63 : 20, w = CW - tx - 10;
-    chu(vo, tx, 26, p.ten, 'ten', w);
-    chu(vo, tx, 43, chuNam(p) || (p.daMat ? '' : 'Còn sống'), 'nam-st');
+    var giua = !coAvatar, tx = coAvatar ? 63 : CW / 2, w = coAvatar ? CW - tx - 10 : CW - 28; // không ảnh → chữ căn giữa cho cân đối
+    var tTen = chu(vo, tx, giua ? 27 : 26, p.ten, 'ten', w), tNam = chu(vo, tx, giua ? 44 : 43, chuNam(p) || (p.daMat ? '' : 'Còn sống'), 'nam-st');
+    if (giua) { tTen.setAttribute('text-anchor', 'middle'); tNam.setAttribute('text-anchor', 'middle'); }
     var bac = p.dauRe ? (p.gioi === 'nu' ? (p.vai || 'Vợ') : 'Chồng') : (p === DB.thuyTo ? 'Thủy tổ' : (p.ngoaiTon ? 'Cháu ngoại' : (p.thuBac || '')));
     if (CD.truyenThong && !p.dauRe) {
       var nGai = p.con.filter(function (c) { return c.gioi === 'nu' && (c.cha === p.id); }).length;
@@ -399,8 +399,9 @@
     if (bac) {
       var cb = el('g', { 'class': 'chip-bac' + (laXH ? ' xh' : '') }, vo);
       var bw = Math.min(w, doDai(bac, '600 10.5px "Be Vietnam Pro", sans-serif') + 14);
-      el('rect', { x: tx - 1, y: 51, width: bw, height: 17, rx: 8.5 }, cb);
-      chu(cb, tx + 6, 63, bac, '', bw - 12 < doDai(bac, '600 10.5px "Be Vietnam Pro", sans-serif') ? bw - 12 : 0);
+      el('rect', { x: giua ? tx - bw / 2 : tx - 1, y: 51, width: bw, height: 17, rx: 8.5 }, cb);
+      var tc = chu(cb, giua ? tx : tx + 6, 63, bac, '', bw - 12 < doDai(bac, '600 10.5px "Be Vietnam Pro", sans-serif') ? bw - 12 : 0);
+      if (giua) tc.setAttribute('text-anchor', 'middle');
     }
     if (p.dich) {
       var hd = el('g', { 'class': 'huy-dich' }, vo);
