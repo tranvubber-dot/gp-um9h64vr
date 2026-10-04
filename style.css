@@ -707,3 +707,9 @@ html[data-nen="rongphuong"] .noi, html[data-nen="sonmai"] .noi { stroke: #f0b84a
 .gat input:checked + .cong-tac { background: #34c759; }
 .gat input:checked + .cong-tac::after { transform: translateX(20px); }
 #oMat { animation: noi-len .35s ease both; }
+/* Thẻ "Bạn": viền vàng kim + hào quang toả sáng */
+.the.toi .nen { stroke: url(#gVienVang) !important; stroke-width: 3.6 !important; stroke-dasharray: none !important; }
+.hao-quang { fill: #f5c04a; opacity: .55; animation: hao-quang 2.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes hao-quang { 0%, 100% { opacity: .5; transform: scale(.99); } 50% { opacity: .95; transform: scale(1.06); } }
+@media (prefers-reduced-motion: reduce) { .hao-quang { animation: none; } }
+.the.chon:not(.toi) .nen { stroke: var(--nhan) !important; }
