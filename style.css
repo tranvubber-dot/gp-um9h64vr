@@ -895,8 +895,20 @@ html[data-nen="luonglong"] { --chu-vang: #8a5a0c; --chu-vang2: #a8761c; }
 .goc-dich { fill: none; stroke: #f2b84b; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 2px rgba(242, 184, 75, .6)); }
 .ios .goc-dich { filter: none; }
 .huy.ga { background: linear-gradient(135deg, #a3241a, #e5383b); color: #ffe7a8; }
-.o-mau.dich { background: transparent; border: 3px double #e0a43a; border-radius: 2px; width: 12px; height: 12px; }
+.o-mau.dich { background: linear-gradient(90deg, #7a1410, #c0281e, #7a1410); border: 1px solid #f2b84b; border-radius: 2px; width: 16px; height: 8px; vertical-align: 1px; }
 @media (max-width: 640px) { .chu-giai { flex-wrap: wrap; max-width: calc(100% - 178px); row-gap: 3px; } }
 
-.khung-dich { pointer-events: none; filter: drop-shadow(0 2px 4px rgba(60, 30, 0, .45)); }
-.ios .khung-dich { filter: none; }
+.khung-vang { pointer-events: none; filter: drop-shadow(0 2px 4px rgba(60, 30, 0, .45)); }
+.ios .khung-vang { filter: none; }
+
+/* Dòng đích: dải lụa đỏ + biển "ĐÍCH" */
+.dai-lua { stroke: url(#gLua); stroke-width: 5; stroke-linecap: round; fill: none; }
+.bien-dich { fill: #8b1a1a; stroke: #f2b84b; stroke-width: 1; }
+.chu-dich { fill: #ffe7a8; font: 700 9.5px 'Noto Serif', Georgia, serif; letter-spacing: 1.6px; }
+/* người đã mất: thẻ trang trọng không cần viền vàng riêng vì đã có khung hoa văn */
+.the.trang-trong .nen { stroke-width: 1.2 !important; stroke-opacity: .5; }
+
+.sao-dich { fill: url(#gVienVang); stroke: #7a3e08; stroke-width: 1; stroke-linejoin: round; filter: drop-shadow(0 0 3px rgba(255, 200, 80, .8)); }
+.ios .sao-dich { filter: none; }
+.o-mau.dich { background: none !important; border: 0 !important; width: auto; height: auto; }
+.o-mau.dich::before { content: '★'; color: #f2b84b; font-size: 12px; font-style: normal; }

@@ -367,7 +367,7 @@
       el('rect', { 'class': 'vet-sang', x: fx - KHUNG_W * 0.6, y: fy - 10, width: KHUNG_W * 0.45, height: KHUNG_H + 20, fill: 'url(#gVetSang)', transform: 'skewX(-20)' }, vs);
     }
     // bóng mềm giả (2 lớp, không dùng filter để kéo thả mượt)
-    var rxT = p.dich ? 6 : 20; // dòng đích: góc vuông nhẹ để vừa khung hoa văn
+    var coKhungVang = p.daMat || laCuTo(p), rxT = coKhungVang ? 6 : 20; // người đã mất, cụ Tổ: khung vàng hoa văn → góc vuông nhẹ
     el('rect', { 'class': 'bong2', x: -2, y: 4, width: CW + 4, height: CH + 4, rx: rxT + 2 }, vo);
     el('rect', { 'class': 'bong1', x: 0, y: 2.5, width: CW, height: CH + 1, rx: rxT }, vo);
     el('rect', { 'class': 'nen', width: CW, height: CH, rx: rxT }, vo);
@@ -405,7 +405,12 @@
       var tc = chu(cb, giua ? tx : tx + 6, 63, bac, '', bw - 12 < doDai(bac, '600 10.5px "Be Vietnam Pro", sans-serif') ? bw - 12 : 0);
       if (giua) tc.setAttribute('text-anchor', 'middle');
     }
-    if (p.dich) el('image', { 'class': 'khung-dich', x: -6, y: -6, width: CW + 12, height: CH + 12, href: 'nen/khung-dich.webp', preserveAspectRatio: 'none' }, vo); // dòng đích: khung vàng chạm hoa văn
+    if (coKhungVang) el('image', { 'class': 'khung-vang', x: -6, y: -6, width: CW + 12, height: CH + 12, href: 'nen/khung-dich.webp', preserveAspectRatio: 'none' }, vo); // khung vàng chạm hoa văn
+    if (p.dich) { // dòng đích: một ngôi sao vàng nhỏ ngay giữa mép trên, chỗ dây nối chạm vào thẻ
+      var sy0 = coKhungVang ? -6 : 0, sao = [];
+      for (var si = 0; si < 10; si++) { var sa = -Math.PI / 2 + si * Math.PI / 5, sr = si % 2 ? 3.4 : 8; sao.push((CW / 2 + sr * Math.cos(sa)).toFixed(1) + ',' + (sy0 + sr * Math.sin(sa)).toFixed(1)); }
+      el('polygon', { 'class': 'sao-dich', points: sao.join(' ') }, vo);
+    }
     return g;
   }
 
