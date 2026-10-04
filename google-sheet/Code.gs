@@ -104,7 +104,8 @@ function doPost(e) {
   if (body.ma == null) { // lấy cây gia phả (không có phần riêng tư)
     var d = docSheet_();
     var tb = []; try { tb = docThongBao_(); } catch (e) {}
-    return json_({ ok: true, thongTin: d.thongTin, nguoi: d.cong, thongBao: tb, khoa: dsKhoa_(), capNhat: new Date().toISOString() });
+    var lh = kiemVe_(body.ve) ? d.rieng : null; // đã đăng nhập bằng SĐT có trong bảng → xem được liên lạc, không cần mã gia đình
+    return json_({ ok: true, thongTin: d.thongTin, nguoi: d.cong, thongBao: tb, khoa: dsKhoa_(), lienHe: lh, capNhat: new Date().toISOString() });
   }
   var ma = PropertiesService.getScriptProperties().getProperty('MA_GIA_DINH');
   if (!ma) return json_({ ok: false, loi: 'Ban quản trị chưa đặt mã gia đình' });

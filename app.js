@@ -173,7 +173,8 @@
         if (d && d.loi === 'can_link') throw { canLink: true };
         if (d && d.loi === 'can_dang_nhap') throw { canDangNhap: true };
         if (!d || !d.nguoi) throw new Error(d && d.loi || 'Dữ liệu không đúng dạng');
-        delete d.ok; d.taiLuc = Date.now(); ghi('dulieu', d); return d;
+        if (d.lienHe) { LH = d.lienHe; ghi('lienhe', LH); } // đã đăng nhập → liên lạc tự mở, không cần mã gia đình
+        delete d.lienHe; delete d.ok; d.taiLuc = Date.now(); ghi('dulieu', d); return d;
       });
     if (cu && !epMoi) { // hiện ngay bản đã lưu, cập nhật ngầm
       moi.then(function (d) { if (JSON.stringify(d.nguoi) !== JSON.stringify(cu.nguoi) || JSON.stringify(d.thongTin) !== JSON.stringify(cu.thongTin)) { RAW = d; dungLai(); bao('Đã cập nhật dữ liệu mới'); } })
@@ -714,7 +715,7 @@
       if (L.facebook) h += '<a class="fb" href="' + esc(laLink(L.facebook) ? L.facebook : 'https://www.facebook.com/' + L.facebook) + '" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 8h3V4h-3a4 4 0 0 0-4 4v3H7v4h3v6h4v-6h3l1-4h-4V8z"/></svg>Facebook</a>';
       h += '</div></div>';
     } else if (!p.daMat && !LH) {
-      h += '<div class="muc-ct"><div class="khoa">Số điện thoại, Zalo, Facebook của người còn sống chỉ hiện khi nhập <b>mã gia đình</b>. <span class="lien-ket" data-di="mokhoa">Nhập mã</span></div></div>';
+      if (LA_MAU) h += '<div class="muc-ct"><div class="khoa">Số điện thoại, Zalo, Facebook của người còn sống chỉ hiện khi nhập <b>mã gia đình</b>. <span class="lien-ket" data-di="mokhoa">Nhập mã</span></div></div>';
     }
 
     h += '<div class="hang-nut" style="margin-top:18px"><button class="nut chinh" data-di="cay">Xem trên phả đồ</button><button class="nut" data-di="xh">Tính xưng hô với người này</button></div>';
@@ -796,7 +797,7 @@
     h += '<div id="oLienHe"' + (songCu ? '' : ' hidden') + '><h4 class="nhom-sua">Liên lạc</h4>';
     h += '<div class="hai-o">' + oSua('dien_thoai', 'Điện thoại', L.dienThoai, 'tel', '09…') + oSua('zalo', 'Zalo (số)', L.zalo, 'tel', '') + '</div>';
     h += oSua('facebook', 'Facebook', L.facebook, 'url', 'link hoặc tên tài khoản') + oSua('noi_o', 'Nơi ở', p.noiO, 'text', '');
-    if (!LH) h += '<p class="phu" style="margin:-4px 2px 10px">Liên lạc đang ẩn (chưa nhập mã gia đình). Ô nào để trống sẽ giữ nguyên như cũ.</p>';
+    if (!LH) h += '<p class="phu" style="margin:-4px 2px 10px">Chưa tải được liên lạc. Ô nào để trống sẽ giữ nguyên như cũ.</p>';
     h += '</div>';
     h += oMatMa(!p.daMat);
     h += '<div class="hang-nut" style="margin-top:14px"><button class="nut chinh" id="nutLuuSua">Lưu lên gia phả</button><button class="nut" data-di="huySua">Huỷ</button></div>';
@@ -1189,6 +1190,11 @@
 
   function veKhoa() {
     var k = $('#khoiKhoa');
+    if (!LA_MAU) { // bản thật: đăng nhập bằng SĐT là xem được liên lạc
+      var n = LH ? Object.keys(LH).length : 0;
+      k.innerHTML = '<p>Số điện thoại, Zalo, Facebook của mọi người hiện cho <b>người đã đăng nhập</b> (có số điện thoại trong gia phả).' + (n ? ' Đang có liên lạc của <b>' + n + '</b> người — vào <b>Tra cứu → Có liên lạc</b> để xem danh bạ.' : '') + '</p>';
+      return;
+    }
     if (LH) {
       var n = Object.keys(LH).length;
       k.innerHTML = '<p>Đã mở khoá trên máy này: thấy được liên lạc của <b>' + n + '</b> người. Vào <b>Tra cứu → Có liên lạc</b> để xem danh bạ.</p>' +
@@ -1316,7 +1322,7 @@
       '<div class="hang-nut"><button class="nut" id="taiLaiApp">↻ Tải lại app và dữ liệu mới nhất</button>' + (doc('ve', null) ? '<button class="nut" id="dangXuat">Đăng xuất</button>' : (LA_MAU ? '' : '<button class="nut chinh" id="moDN">📱 Đăng nhập</button>')) + '</div>' +
       (doc('khoa', null) ? '<div class="hang-nut"><button class="nut chinh" id="guiLinkHo">Gửi link gia phả cho người trong họ</button></div>' : '') +
       '<div class="hang-nut"><button class="nut" id="layLinkKP">Lấy link khôi phục của tôi</button></div>' +
-      '<p class="phu">Lưu link này vào Ghi chú hoặc gửi Zalo cho chính mình. Lỡ xoá app hay đổi điện thoại, mở link là app nhớ lại bạn là ai và cách xem. Link không chứa số điện thoại hay mã gia đình (mã thì nhập lại một lần).</p>';
+      '<p class="phu">Lưu link này vào Ghi chú hoặc gửi Zalo cho chính mình. Lỡ xoá app hay đổi điện thoại, mở link là app nhớ lại bạn là ai và cách xem. Link không chứa số điện thoại của ai.</p>';
     try {
       if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(function (ok) { var e = $('#luuLauDai'); if (e) e.textContent = ok ? 'Có (máy sẽ không tự xoá)' : 'Bình thường'; });
       else $('#luuLauDai').textContent = 'Bình thường';
