@@ -1353,18 +1353,20 @@
   var SAU_DN = null;
   function moDangNhap(tuChon, sau) {
     $('#dangTai').hidden = true;
+    if (tuChon !== true) document.body.classList.add('chua-dang-nhap'); // giấu nội dung phía sau
     var m = $('#manDangNhap');
     if (!m) {
       m = document.createElement('div'); m.className = 'hoi-toi'; m.id = 'manDangNhap';
       m.innerHTML = '<div class="hop-toi kinh"><div>' +
         '<button class="x-dn" id="dongDN" aria-label="Đóng" hidden>×</button>' +
         '<div class="an-trien lon" aria-hidden="true">陳</div><h2>Đăng nhập gia phả</h2>' +
-        '<p class="phu">🔒 Chỉ con cháu có tên trong gia phả mới vào được. Mã đăng nhập do trưởng họ gửi qua Zalo.</p>' +
+        '<p class="phu">🔒 Chỉ con cháu có số điện thoại trong gia phả mới vào được.</p>' +
         '<div class="chon-dn" hidden><button type="button" data-dn="sdt" class="chon">📱 Số điện thoại</button><button type="button" data-dn="ten">👪 Bạn là con ai?</button></div>' +
         '<form id="formSdt" class="form-dn">' +
         '<label class="o-sua"><span>Số điện thoại của bạn</span><input id="dnSdt" type="tel" inputmode="tel" placeholder="VD: 0943 xxx xxx" autocomplete="tel"></label>' +
-        '<label class="o-sua"><span>Mã đăng nhập <small class="phu">(6 số, trưởng họ nhắn cho bạn)</small></span><input id="dnMa" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code" class="o-ma-dn"></label>' +
-        '<button class="nut chinh" type="submit" style="width:100%;margin-top:6px">Vào gia phả</button></form>' +
+        '<div id="khungMa" hidden><div class="ma-tra-ve">Mã đăng nhập của <b id="dnTenNguoi"></b><span class="ma-to" id="dnMaHien"></span></div>' +
+        '<label class="o-sua"><span>Gõ lại mã ở trên</span><input id="dnMa" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code" class="o-ma-dn"></label></div>' +
+        '<button class="nut chinh" type="submit" id="nutDN" style="width:100%;margin-top:6px">Lấy mã</button></form>' +
         '<form id="formDN" class="form-dn" hidden>' +
         '<label class="o-sua"><span>Tên của bạn</span><input id="dnTen" placeholder="VD: Chính, hoặc Trần Đình Chính" autocomplete="off" autocapitalize="words"></label>' +
         '<label class="o-sua"><span>Bạn là con của ai? <small class="phu">(dâu/rể: gõ tên vợ/chồng)</small></span><input id="dnCon" placeholder="VD: Liêm" autocomplete="off" autocapitalize="words"></label>' +
@@ -1400,11 +1402,28 @@
           })
           .catch(function () { $('#dnLoi').textContent = 'Không kết nối được. Kiểm tra mạng.'; nut.disabled = false; nut.textContent = chu; });
       };
+      $('#dnSdt').oninput = function () { $('#khungMa').hidden = true; $('#dnMa').value = ''; $('#nutDN').textContent = 'Lấy mã'; };
       $('#formSdt').onsubmit = function (e) {
         e.preventDefault();
-        var sdt = $('#dnSdt').value.trim(), ma = $('#dnMa').value.replace(/\D/g, '');
-        if (!sdt || ma.length < 4) { $('#dnLoi').textContent = 'Gõ số điện thoại và mã 6 số.'; return; }
-        gui({ lenh: 'dangNhapSdt', sdt: sdt, maDN: ma }, this.querySelector('button'));
+        var sdt = $('#dnSdt').value.trim(), nut = $('#nutDN');
+        if (sdt.replace(/\D/g, '').length < 9) { $('#dnLoi').textContent = 'Gõ số điện thoại của bạn.'; return; }
+        if ($('#khungMa').hidden) { // bước 1: lấy mã từ bảng gia phả
+          nut.disabled = true; nut.textContent = 'Đang tìm số trong gia phả…'; $('#dnLoi').textContent = '';
+          fetch(C.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ k: doc('khoa', null), lenh: 'layMaDN', sdt: sdt }) })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+              nut.disabled = false;
+              if (d && d.loi === 'can_link') { khoaApp(true); return; }
+              if (!d || !d.ok) { nut.textContent = 'Lấy mã'; $('#dnLoi').textContent = (d && d.loi) || 'Chưa lấy được mã, thử lại.'; return; }
+              $('#dnTenNguoi').textContent = d.ten; $('#dnMaHien').textContent = d.maDN; $('#dnMa').value = '';
+              $('#khungMa').hidden = false; nut.textContent = 'Vào gia phả'; setTimeout(function () { $('#dnMa').focus(); }, 50);
+            })
+            .catch(function () { nut.disabled = false; nut.textContent = 'Lấy mã'; $('#dnLoi').textContent = 'Không kết nối được. Kiểm tra mạng.'; });
+          return;
+        }
+        var ma = $('#dnMa').value.replace(/\D/g, '');
+        if (ma.length < 4) { $('#dnLoi').textContent = 'Thiếu mã đăng nhập.'; return; }
+        gui({ lenh: 'dangNhapSdt', sdt: sdt, maDN: ma }, nut); // bước 2: vào
       };
       $('#formDN').onsubmit = function (e) {
         e.preventDefault();
@@ -1616,10 +1635,8 @@
   }).then(function (d) {
     RAW = d; dungLai(); G._daVua = true;
     try { if (sessionStorage.getItem('gp_vuaKhoiPhuc')) { sessionStorage.removeItem('gp_vuaKhoiPhuc'); setTimeout(function () { bao('Đã khôi phục cài đặt của bạn từ link'); }, 600); } } catch (e) {}
-    var hoiToi = function () { if (!TOI && !doc('boQuaToi', false)) setTimeout(moHoiToi, 300); };
-    var daBoQua = false; try { daBoQua = !!sessionStorage.getItem('gp_deSauDN'); } catch (e) {}
-    if (!LA_MAU && !doc('ve', null) && !daBoQua) setTimeout(function () { moDangNhap('moApp', hoiToi); }, 400); // cửa vào: đăng nhập trước
-    else hoiToi();
+    if (!LA_MAU && !doc('ve', null)) { moDangNhap(); return; } // cửa vào: bắt buộc đăng nhập bằng số điện thoại
+    if (!TOI && !doc('boQuaToi', false)) setTimeout(moHoiToi, 300);
   }); }
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(function () {});
 

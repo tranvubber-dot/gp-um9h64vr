@@ -88,6 +88,7 @@ function doPost(e) {
   if (!khoaDung_(body.k)) { cd.tang(); return json_({ ok: false, loi: 'can_link' }); }
   if (body.lenh === 'dangNhap') return dangNhap_(body, cd);
   if (body.lenh === 'dangNhapSdt') return dangNhapSdt_(body, cd);
+  if (body.lenh === 'layMaDN') return layMaDN_(body, cd);
   if (batDangNhap_() && !kiemVe_(body.ve)) return json_({ ok: false, loi: 'can_dang_nhap' });
   if (body.lenh === 'sua' || body.lenh === 'them' || body.lenh === 'suaHo') {
     try { return suaThongTin_(body, cd); }
@@ -255,6 +256,18 @@ function dangNhapSdt_(body, cd) {
   var het = Date.now() + 400 * 864e5;
   ghiDangNhap_(ma, b.tenCua[ma], true);
   return json_({ ok: true, ve: ma + '.' + het + '.' + ky_(ma + '.' + het), ma: ma, ten: b.tenCua[ma] });
+}
+/* App gửi { k, lenh:'layMaDN', sdt } → SĐT có trong bảng (và không bị Chặn) thì trả mã đăng nhập về app */
+function layMaDN_(body, cd) {
+  var sdt = chuSo_(body.sdt);
+  if (sdt.length < 9) return json_({ ok: false, loi: 'Số điện thoại chưa đúng.' });
+  var lock = LockService.getDocumentLock(); lock.waitLock(20000);
+  try { dongBoDangNhap_(); } finally { lock.releaseLock(); }
+  var sh = soDangNhap_(), n = sh.getLastRow(), v = n > 1 ? sh.getRange(2, 1, n - 1, COT_DN.length).getDisplayValues() : [];
+  var r = v.filter(function (x) { return chuSo_(x[2]) === sdt; })[0];
+  if (!r) { cd.tang(); return json_({ ok: false, loi: 'Số này chưa có trong gia phả. Nhờ trưởng họ ghi số của bạn vào bảng.' }); }
+  if (/chặn/i.test(r[5])) return json_({ ok: false, loi: 'Bạn đang bị trưởng họ tạm khoá. Liên hệ trưởng họ để được mở lại.' });
+  return json_({ ok: true, maDN: r[3], ten: r[1] });
 }
 /* Menu: tạo mã cho mọi người có SĐT + mở tab */
 function taoMaDangNhap() {

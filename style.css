@@ -730,3 +730,9 @@ html[data-nen="rongphuong"] .noi, html[data-nen="sonmai"] .noi { stroke: #f0b84a
 .x-dn { position: absolute; right: 12px; top: 12px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: var(--vach); color: var(--chu); font-size: 20px; cursor: pointer; }
 #manDangNhap .hop-toi { position: relative; }
 .de-sau { display: block; margin: 14px auto 0; border: 0; background: transparent; color: var(--chu3); font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; }
+
+/* Chưa đăng nhập: giấu nội dung gia phả phía sau */
+.chua-dang-nhap .tab, .chua-dang-nhap #nganKeo, .chua-dang-nhap #daiChu { visibility: hidden !important; }
+.ma-tra-ve { margin: 4px 2px 8px; font-size: 14px; color: var(--chu2); }
+.ma-tra-ve b { color: var(--chu); }
+.ma-tra-ve { text-align: center; } .ma-to { display: block; margin: 8px 0 4px; font-size: 34px; font-weight: 800; letter-spacing: .22em; color: var(--nhan); }
