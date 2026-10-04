@@ -108,7 +108,7 @@
     });
   })();
 
-  var CD = Object.assign({ truyenThong: false, traiTruocGaiSau: false, hienNgoaiTon: C.hienNgoaiTon !== false }, doc('cachxem', {}));
+  var CD = Object.assign({ truyenThong: false, traiTruocGaiSau: false, hienNgoaiTon: C.hienNgoaiTon !== false, nhanhVuong: true }, doc('cachxem', {}));
   var PB = ((document.currentScript && document.currentScript.src || '').match(/v=([\d.]+)/) || [])[1];
   var RAW = null;          // dữ liệu công khai (đã bỏ phần riêng tư)
   var LH = doc('lienhe', null); // phần riêng tư đã mở khoá: { ma: {dien_thoai, zalo, facebook, noi_o, ngay_sinh} }

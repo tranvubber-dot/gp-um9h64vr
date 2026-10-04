@@ -1,5 +1,5 @@
 /* Cho app chạy khi mất mạng. Đổi PHIEN_BAN mỗi lần sửa app. */
-var PHIEN_BAN = 'giapha-1.18.0';
+var PHIEN_BAN = 'giapha-1.18.1';
 var TEP = ['./', 'index.html', 'style.css', 'app.js', 'db.js', 'xungho.js', 'amlich.js', 'config.js', 'data-mau.js',
   'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-180.png'];
 self.addEventListener('install', function (e) {
