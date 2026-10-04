@@ -18,10 +18,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&text=%E9%99%B3&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.11.0">
+<link rel="stylesheet" href="style.css?v=1.13.0">
 </head>
 <body>
 <div class="nen-loang" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+<div class="hoa-van" id="hoaVan" aria-hidden="true"></div>
 <header class="dau kinh">
   <div class="an-trien" aria-hidden="true">陳</div>
   <div class="dau-chu" id="dauChu" role="button" tabindex="0" aria-label="Xem gốc gác dòng họ">
@@ -35,7 +36,8 @@
 </header>
 <div class="dai-chu kinh" id="daiChu">
   <button class="nut-nhac" id="nutNhac" aria-label="Bật / tắt nhạc nền" title="Nhạc nền">🔔</button>
-  <div class="dai-chay"><span id="chuChay"></span></div>
+  <svg class="sen-nho" viewBox="-20 -20 40 40" aria-hidden="true"><path d="M0-15Q7-5 0 7Q-7-5 0-15Z"/><path d="M0 7Q-4-6-14-8Q-12 4 0 7Z"/><path d="M0 7Q4-6 14-8Q12 4 0 7Z"/><path d="M-16 9Q0 15 16 9"/></svg>
+  <div class="dai-chay"><span id="chuChay"><b class="chu-vang" id="chuVang"></b></span></div>
 </div>
 
 <div id="bangMau" class="bang-mau kinh" hidden>
@@ -137,6 +139,13 @@
   <section id="tab-dongho" class="tab">
     <div class="trang">
       <div class="hang-cap-nhat kinh"><span>Phiên bản <b id="soPB">…</b></span><button class="nut chinh" id="nutCapNhatApp">↻ Cập nhật app</button></div>
+      <div class="chon-nen kinh" id="chonNen"><span>Giao diện nền</span><div class="ds-nen">
+        <button data-nen="rongphuong"><i class="mau-nen"></i>Rồng phượng</button>
+        <button data-nen="luonglong"><i class="mau-nen"></i>Lưỡng long</button>
+        <button data-nen=""><i class="mau-nen kinh-x"></i>Kính</button>
+        <button data-nen="trongdong"><i class="mau-nen"></i>Trống đồng</button>
+        <button data-nen="sonmai"><i class="mau-nen"></i>Sơn mài mây</button>
+        <button data-nen="sen"><i class="mau-nen"></i>Sen hồng</button></div></div>
       <div class="the-so" id="thongKe"></div>
       <article class="khoi-chu kinh"><h2>Phả ký</h2><div id="phaKy"></div></article>
       <article class="khoi-chu kinh"><h2>Tộc ước</h2><div id="tocUoc"></div></article>
@@ -221,11 +230,11 @@
   </div>
 </div>
 
-<script src="config.js?v=1.11.0"></script>
-<script src="data-mau.js?v=1.11.0"></script>
-<script src="amlich.js?v=1.11.0"></script>
-<script src="db.js?v=1.11.0"></script>
-<script src="xungho.js?v=1.11.0"></script>
-<script src="app.js?v=1.11.0"></script>
+<script src="config.js?v=1.13.0"></script>
+<script src="data-mau.js?v=1.13.0"></script>
+<script src="amlich.js?v=1.13.0"></script>
+<script src="db.js?v=1.13.0"></script>
+<script src="xungho.js?v=1.13.0"></script>
+<script src="app.js?v=1.13.0"></script>
 </body>
 </html>

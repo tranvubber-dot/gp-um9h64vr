@@ -1376,10 +1376,10 @@
     'Thời gian cha mẹ ở bên ta là có hạn. Hãy gọi về nhà, hỏi han một câu hôm nay.'
   ];
   (function () {
-    var i = Math.floor(Math.random() * LOI_HAY.length), sp = $('#chuChay');
+    var i = Math.floor(Math.random() * LOI_HAY.length), sp = $('#chuChay'), vang = $('#chuVang');
     var giam = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     function chay() {
-      sp.textContent = LOI_HAY[i % LOI_HAY.length]; i++;
+      vang.textContent = LOI_HAY[i % LOI_HAY.length]; i++;
       if (giam) { sp.style.animation = 'none'; setTimeout(chay, 9000); return; } // không chạy chữ: đổi câu mỗi 9 giây
       sp.style.animation = 'none'; void sp.offsetWidth;
       var w = sp.parentNode.clientWidth, cw = sp.scrollWidth, giay = Math.max(9, (w + cw) / 38);
@@ -1389,6 +1389,58 @@
     sp.addEventListener('animationend', function () { if (!giam) chay(); });
     chay();
   })();
+
+  /* ---------- Giao diện nền kiểu Việt: trống đồng phù điêu, sơn mài mây vàng, sen hồng (SVG tự vẽ) ---------- */
+  function svgBoc(noi, w, h, mau, tamX, tamY) { // vẽ 3 lớp: bóng tối, ánh sáng, nét chính → hiệu ứng nổi (phù điêu)
+    var lop = function (dx, dy, m, o) { return '<g transform="translate(' + dx + ' ' + dy + ')" stroke="' + m + '" stroke-opacity="' + o + '" fill="none">' + noi + '</g>'; };
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + (tamX || 0) + ' ' + (tamY || 0) + ' ' + w + ' ' + h + '" width="' + w + '" height="' + h + '" stroke-linecap="round" stroke-linejoin="round">' +
+      lop(1.6, 1.8, '#000', 0.35) + lop(-1.1, -1.2, '#fff', 0.35) + lop(0, 0, mau, 1) + '</svg>';
+  }
+  function svgTrongDong(mau) {
+    var g = '', i, a, r, P = Math.PI;
+    var sao = []; for (i = 0; i < 28; i++) { a = i * P / 14 - P / 2; r = i % 2 ? 20 : 58; sao.push((r * Math.cos(a)).toFixed(1) + ',' + (r * Math.sin(a)).toFixed(1)); }
+    g += '<polygon points="' + sao.join(' ') + '" stroke-width="2.2"/><circle r="12" stroke-width="2"/>';
+    [68, 72, 92, 96, 134, 138, 186, 190, 224, 228, 262].forEach(function (x) { g += '<circle r="' + x + '" stroke-width="1.6"/>'; });
+    for (i = 0; i < 44; i++) { a = i * 2 * P / 44; g += '<circle cx="' + (82 * Math.cos(a)).toFixed(1) + '" cy="' + (82 * Math.sin(a)).toFixed(1) + '" r="2.4" stroke-width="1.4"/>'; }
+    var z = []; for (i = 0; i <= 72; i++) { a = i * 2 * P / 72; r = i % 2 ? 108 : 122; z.push((r * Math.cos(a)).toFixed(1) + ',' + (r * Math.sin(a)).toFixed(1)); }
+    g += '<polyline points="' + z.join(' ') + '" stroke-width="1.6"/>';
+    var chim = 'M-16 0Q-6-3 5-1L18-3L6 1Q-5 3-16 0ZM-5-1Q1-13 11-15Q4-6 2-1M-7 1Q-1 10 7 13Q2 5-1 1M-16 0Q-20-3-22-8';
+    for (i = 0; i < 14; i++) { a = i * 360 / 14; g += '<g transform="rotate(' + a + ') translate(0 -162) rotate(90)"><path d="' + chim + '" stroke-width="1.7"/></g>'; }
+    for (i = 0; i < 40; i++) { a = i * 2 * P / 40; g += '<circle cx="' + (207 * Math.cos(a)).toFixed(1) + '" cy="' + (207 * Math.sin(a)).toFixed(1) + '" r="9" stroke-width="1.5"/><circle cx="' + (207 * Math.cos(a)).toFixed(1) + '" cy="' + (207 * Math.sin(a)).toFixed(1) + '" r="2" stroke-width="1.3"/>'; }
+    for (i = 0; i < 120; i++) { a = i * 2 * P / 120; g += '<line x1="' + (240 * Math.cos(a)).toFixed(1) + '" y1="' + (240 * Math.sin(a)).toFixed(1) + '" x2="' + (254 * Math.cos(a)).toFixed(1) + '" y2="' + (254 * Math.sin(a)).toFixed(1) + '" stroke-width="1.3"/>'; }
+    return svgBoc(g, 560, 560, mau, -280, -280);
+  }
+  function svgMay(mau) { // vân mây cuộn, lặp thành nền
+    var may = 'M8 52Q6 38 22 36Q24 22 40 24Q50 12 64 22Q80 18 84 34Q100 36 98 52Z M22 46Q22 40 28 40Q34 40 33 46Q32 50 28 49 M48 34Q50 28 56 29Q62 31 60 37Q58 40 54 38 M72 44Q74 38 80 40Q84 43 81 47';
+    return svgBoc('<path d="' + may + '" stroke-width="2"/><g transform="translate(60 70) scale(.7)"><path d="' + may + '" stroke-width="2.6"/></g>', 130, 110, mau);
+  }
+  function svgSen(mau) {
+    var hoa = '<path d="M0-26Q11-9 0 9Q-11-9 0-26Z"/><path d="M0 9Q-7-11-22-14Q-19 4 0 9Z"/><path d="M0 9Q7-11 22-14Q19 4 0 9Z"/><path d="M-3 9Q-19-1-31 1Q-24 12 -3 11Z"/><path d="M3 9Q19-1 31 1Q24 12 3 11Z"/><path d="M-26 15Q0 24 26 15"/>';
+    return svgBoc('<g transform="translate(70 62)" stroke-width="2">' + hoa + '</g><g transform="translate(0 132) scale(.55)" stroke-width="3">' + hoa + '</g><g transform="translate(140 132) scale(.55)" stroke-width="3">' + hoa + '</g>', 140, 140, mau);
+  }
+  function urlSvg(x) { return 'url("data:image/svg+xml;charset=utf-8,' + encodeURIComponent(x) + '")'; }
+  var NEN = {
+    rongphuong: function () { return { img: 'url("nen/phuong.webp"), url("nen/rong.webp")', size: 'min(64vmin, 440px) auto, min(84vmin, 600px) auto', lap: 'no-repeat, no-repeat',
+      vt: 'right -7vmin top 15vh, left -12vmin bottom calc(var(--duoi) + 3vh)', mau: 'url("nen/rong.webp")' }; },
+    luonglong: function () { return { img: 'url("nen/luong-long.webp")', size: 'cover', lap: 'no-repeat', vt: 'center', mau: 'url("nen/luong-long.webp")' }; },
+    trongdong: function () { return { img: urlSvg(svgTrongDong('#c8913a')), size: 'min(120vmin, 900px)', lap: 'no-repeat', vt: 'center 58%' }; },
+    sonmai: function () { return { img: urlSvg(svgMay('#d9a441')), size: '130px 110px', lap: 'repeat', vt: '0 0' }; },
+    sen: function () { return { img: urlSvg(svgSen('#d86a8a')), size: '140px 140px', lap: 'repeat', vt: '0 0' }; }
+  };
+  function apNen(ten) {
+    if (!NEN[ten]) ten = '';
+    document.documentElement.setAttribute('data-nen', ten);
+    var hv = $('#hoaVan'), n = ten ? NEN[ten]() : null;
+    hv.style.backgroundImage = n ? n.img : 'none';
+    if (n) { hv.style.backgroundSize = n.size; hv.style.backgroundRepeat = n.lap; hv.style.backgroundPosition = n.vt; }
+    document.querySelectorAll('#chonNen [data-nen]').forEach(function (b) { b.classList.toggle('chon', b.getAttribute('data-nen') === ten); });
+  }
+  document.querySelectorAll('#chonNen [data-nen]').forEach(function (b) {
+    var ten = b.getAttribute('data-nen'), m = b.querySelector('.mau-nen');
+    if (ten && m) { var n = NEN[ten](); m.style.backgroundImage = n.mau || n.img; m.style.backgroundSize = n.mau ? 'cover' : ten === 'trongdong' ? '180%' : '60px'; m.style.backgroundPosition = 'center'; m.setAttribute('data-nen', ten); }
+    b.onclick = function () { ghi('nen', ten); apNen(ten); bao('Đã đổi giao diện nền'); };
+  });
+  apNen(doc('nen', ''));
 
   /* ---------- Nhạc nền Phật giáo nhẹ nhàng: chuông, bát hát, nền trầm (tự tạo bằng Web Audio, không cần file) ---------- */
   var NHAC = { ctx: null, bat: false, hen: [] };
